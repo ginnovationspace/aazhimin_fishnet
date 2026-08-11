@@ -4,7 +4,7 @@
  */
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const prisma = require("../aazhimin/database");
+const prisma = require("@aazhimin/database");
 
 // Stripe webhook secret for verifying webhook signatures
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
@@ -65,8 +65,8 @@ class StripePaymentService {
         data: {
           marketplaceOrderId,
           amount,
-          currency: currency.toUpperCase(),
           status: "PENDING",
+          method: "card",
           transactionId: paymentIntent.id, // Stripe PaymentIntent ID
           gatewayResponse: {
             client_secret: paymentIntent.client_secret,
@@ -190,7 +190,6 @@ class StripePaymentService {
         status: updatedPayment.status,
         transactionId: payment.transactionId,
         amount: payment.amount,
-        currency: payment.currency,
         method: payment.method,
         retrievedAt: new Date().toISOString()
       };
@@ -242,6 +241,7 @@ class StripePaymentService {
       const refundRecord = await prisma.refund.create({
         data: {
           paymentId: payment.id,
+          marketplaceOrderId: payment.marketplaceOrderId,
           amount: refundAmount,
           reason: "Customer requested refund",
           status: stripeRefund.status === "succeeded" ? "PAID" : "PENDING"
@@ -290,7 +290,6 @@ class StripePaymentService {
         paymentId: payment.id,
         status: payment.status,
         amount: payment.amount,
-        currency: payment.currency,
         method: payment.method,
         transactionId: payment.transactionId,
         createdAt: payment.createdAt,
