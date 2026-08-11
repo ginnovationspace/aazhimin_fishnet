@@ -1,101 +1,65 @@
 const prisma = require("@aazhimin/database");
 const { asyncHandler, AppError } = require("../middleware/errorHandler");
 
-const createOrderProduct = asyncHandler(async (request, response) => {
-  const { customerOrderId, productId, quantity } = request.body;
+const toLegacyOrderProduct = (item) => ({
+  id: item.id,
+  customerOrderId: item.sellerOrder.marketplaceOrderId,
+  productId: item.productId,
+  quantity: item.quantity,
+  product: item.product,
+});
 
-  // Validate required fields
-  if (!customerOrderId) {
-    throw new AppError("Customer order ID is required", 400);
-  }
-  if (!productId) {
-    throw new AppError("Product ID is required", 400);
-  }
-  if (!quantity || quantity <= 0) {
-    throw new AppError("Valid quantity is required", 400);
-  }
-
-  // Verify that the customer order exists
-  const existingOrder = await prisma.customer_order.findUnique({
-    where: { id: customerOrderId }
-  });
-
-  if (!existingOrder) {
-    throw new AppError("Customer order not found", 404);
-  }
-
-  // Verify that the product exists
-  const existingProduct = await prisma.product.findUnique({
-    where: { id: productId }
-  });
-
-  if (!existingProduct) {
-    throw new AppError("Product not found", 404);
-  }
-
-  // Create the order product
-  const orderProduct = await prisma.customer_order_product.create({
-    data: {
-      customerOrderId: customerOrderId,
-      productId: productId,
-      quantity: parseInt(quantity)
-    }
-  });
-
-  return response.status(201).json(orderProduct);
+const createOrderProduct = asyncHandler(async (_request, _response) => {
+  throw new AppError("Create order products through /api/orders", 410);
 });
 
 const updateProductOrder = asyncHandler(async (request, response) => {
   const { id } = request.params;
-  const { customerOrderId, productId, quantity } = request.body;
+  const { quantity } = request.body;
 
   if (!id) {
     throw new AppError("Order product ID is required", 400);
   }
 
-  const existingOrder = await prisma.customer_order_product.findUnique({
-    where: {
-      id: id
-    }
-  });
-
-  if (!existingOrder) {
-    throw new AppError("Order product not found", 404);
-  }
-
-  // Validate quantity if provided
-  if (quantity !== undefined && quantity <= 0) {
+  if (!Number.isFinite(Number(quantity)) || Number(quantity) <= 0) {
     throw new AppError("Quantity must be greater than 0", 400);
   }
 
-  const updatedOrder = await prisma.customer_order_product.update({
-    where: {
-      id: existingOrder.id
-    },
-    data: {
-      customerOrderId: customerOrderId || existingOrder.customerOrderId,
-      productId: productId || existingOrder.productId,
-      quantity: quantity !== undefined ? quantity : existingOrder.quantity
-    }
+  const existingItem = await prisma.orderItem.findUnique({
+    where: { id },
   });
 
-  return response.json(updatedOrder);
+  if (!existingItem) {
+    throw new AppError("Order product not found", 404);
+  }
+
+  const updatedItem = await prisma.orderItem.update({
+    where: { id },
+    data: {
+      quantity: Number(quantity),
+      totalPrice: existingItem.unitPrice * Number(quantity),
+    },
+    include: {
+      product: true,
+      sellerOrder: true,
+    },
+  });
+
+  response.json(toLegacyOrderProduct(updatedItem));
 });
 
 const deleteProductOrder = asyncHandler(async (request, response) => {
   const { id } = request.params;
 
   if (!id) {
-    throw new AppError("Order product ID is required", 400);
+    throw new AppError("Order ID is required", 400);
   }
 
-  await prisma.customer_order_product.deleteMany({
-    where: {
-      customerOrderId: id
-    }
+  await prisma.sellerOrder.deleteMany({
+    where: { marketplaceOrderId: id },
   });
 
-  return response.status(204).send();
+  response.status(204).send();
 });
 
 const getProductOrder = asyncHandler(async (request, response) => {
@@ -105,79 +69,67 @@ const getProductOrder = asyncHandler(async (request, response) => {
     throw new AppError("Order ID is required", 400);
   }
 
-  const order = await prisma.customer_order_product.findMany({
+  const items = await prisma.orderItem.findMany({
     where: {
-      customerOrderId: id
+      sellerOrder: {
+        marketplaceOrderId: id,
+      },
     },
     include: {
-      product: true
-    }
+      product: true,
+      sellerOrder: true,
+    },
   });
 
-  if (!order || order.length === 0) {
-    throw new AppError("Order not found", 404);
+  if (items.length === 0) {
+    throw new AppError("Order products not found", 404);
   }
 
-  return response.status(200).json(order);
+  response.status(200).json(items.map(toLegacyOrderProduct));
 });
 
-const getAllProductOrders = asyncHandler(async (request, response) => {
-  const productOrders = await prisma.customer_order_product.findMany({
-    select: {
-      productId: true,
-      quantity: true,
-      customerOrder: {
-        select: {
-          id: true,
-          name: true,
-          lastname: true,
-          phone: true,
-          email: true,
-          company: true,
-          adress: true,
-          apartment: true,
-          postalCode: true,
-          dateTime: true,
-          status: true,
-          total: true
-        }
-      }
-    }
+const getAllProductOrders = asyncHandler(async (_request, response) => {
+  const items = await prisma.orderItem.findMany({
+    include: {
+      product: true,
+      sellerOrder: {
+        include: {
+          marketplaceOrder: true,
+        },
+      },
+    },
   });
 
-  const ordersMap = new Map();
+  const grouped = new Map();
 
-  for (const order of productOrders) {
-    const { customerOrder, productId, quantity } = order;
-    const { id, ...orderDetails } = customerOrder;
-
-    const product = await prisma.product.findUnique({
-      where: {
-        id: productId
+  for (const item of items) {
+    const marketplaceOrder = item.sellerOrder.marketplaceOrder;
+    const existing = grouped.get(marketplaceOrder.id) || {
+      customerOrderId: marketplaceOrder.id,
+      customerOrder: {
+        name: marketplaceOrder.buyerName || "",
+        lastname: marketplaceOrder.buyerLastname || "",
+        phone: marketplaceOrder.buyerPhone || "",
+        email: marketplaceOrder.buyerEmail || "",
+        company: marketplaceOrder.buyerCompany || "",
+        adress: marketplaceOrder.buyerAddress || "",
+        apartment: marketplaceOrder.buyerApartment || "",
+        postalCode: marketplaceOrder.buyerPostalCode || "",
+        dateTime: marketplaceOrder.placedAt,
+        status: marketplaceOrder.status,
+        total: marketplaceOrder.totalAmount,
       },
-      select: {
-        id: true,
-        title: true,
-        mainImage: true,
-        price: true,
-        slug: true
-      }
-    });
+      products: [],
+    };
 
-    if (ordersMap.has(id)) {
-      ordersMap.get(id).products.push({ ...product, quantity });
-    } else {
-      ordersMap.set(id, {
-        customerOrderId: id,
-        customerOrder: orderDetails,
-        products: [{ ...product, quantity }]
-      });
-    }
+    existing.products.push({
+      ...item.product,
+      quantity: item.quantity,
+    });
+    grouped.set(marketplaceOrder.id, existing);
   }
 
-  const groupedOrders = Array.from(ordersMap.values());
-
-  return response.json(groupedOrders);
+  response.json(Array.from(grouped.values()));
 });
 
 module.exports = {
@@ -185,5 +137,5 @@ module.exports = {
   updateProductOrder,
   deleteProductOrder,
   getProductOrder,
-  getAllProductOrders
+  getAllProductOrders,
 };

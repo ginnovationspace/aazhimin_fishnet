@@ -3,8 +3,9 @@ import { useWishlistStore } from "@/app/_zustand/wishlistStore";
 import WishItem from "@/components/WishItem";
 import apiClient from "@/lib/api";
 import { nanoid } from "nanoid";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-client";
 import { useEffect } from "react";
+import { sanitize } from "@/lib/sanitize";
 
 export const WishlistModule = () => {
   const { data: session, status } = useSession();

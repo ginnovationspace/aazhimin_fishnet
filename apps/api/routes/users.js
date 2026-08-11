@@ -1,6 +1,7 @@
 const express = require('express');
 /** @type {import('express').Router} */
 const router = express.Router();
+const { authenticate, authorize } = require('../middleware/auth');
 
 const {
     getUser,
@@ -10,6 +11,9 @@ const {
     getAllUsers,
     getUserByEmail
   } = require('../controllers/users');
+
+  // Protect all user management routes with authentication and admin authorization
+  router.use(authenticate, authorize("ADMIN"));
 
   router.route('/')
   .get(getAllUsers)

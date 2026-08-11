@@ -1,84 +1,84 @@
 export const categoryMenuList = [
   {
     id: 1,
-    title: "Fishing Nets",
-    src: "/smart phone icon.png",
-    href: "/shop/fishing-nets"
+    title: "Gill Nets",
+    src: "/icons/gill-net.png",
+    href: "/shop/gill-nets"
   },
   {
     id: 2,
-    title: "Fishing Rods",
-    src: "/tablet icon.png",
-    href: "/shop/fishing-rods"
+    title: "Cast Nets",
+    src: "/icons/cast-net.png",
+    href: "/shop/cast-nets"
   },
   {
     id: 3,
-    title: "Reels",
-    src: "/mouse icon.png",
-    href: "/shop/reels"
+    title: "Seine Nets",
+    src: "/icons/seine-net.png",
+    href: "/shop/seine-nets"
   },
   {
     id: 4,
-    title: "Bait & Lures",
-    src: "/camera icon.png",
-    href: "/shop/bait-lures"
+    title: "Trawl Nets",
+    src: "/icons/trawl-net.png",
+    href: "/shop/trawl-nets"
   },
   {
     id: 5,
-    title: "Tackle Boxes",
-    src: "/smart watch.png",
-    href: "/shop/tackle-boxes"
-  },
-  {
-    id: 6,
-    title: "Fishing Apparel",
-    src: "/laptop icon.png",
-    href: "/shop/fishing-apparel"
-  },
-  {
-    id: 7,
-    title: "Fish Finders",
-    src: "/pc icon.png",
-    href: "/shop/fish-finders"
-  },
-  {
-    id: 8,
-    title: "Accessories",
-    src: "/printers icon.png",
-    href: "/shop/accessories"
-  },
-  {
-    id: 9,
     title: "Fishing Lines",
-    src: "/ear buds icon.png",
+    src: "/icons/fishing-line.png",
     href: "/shop/fishing-lines"
   },
   {
+    id: 6,
+    title: "Nylon Nets",
+    src: "/icons/nylon-net.png",
+    href: "/shop/nylon-nets"
+  },
+  {
+    id: 7,
+    title: "HDPE Nets",
+    src: "/icons/hdpe-net.png",
+    href: "/shop/hdpe-nets"
+  },
+  {
+    id: 8,
+    title: "Monofilament Nets",
+    src: "/icons/monofilament-net.png",
+    href: "/shop/monofilament-nets"
+  },
+  {
+    id: 9,
+    title: "Multifilament Nets",
+    src: "/icons/multifilament-net.png",
+    href: "/shop/multifilament-nets"
+  },
+  {
     id: 10,
-    title: "Hooks & Sinkers",
-    src: "/headphone icon.png",
-    href: "/shop/hooks-sinkers"
+    title: "Custom Nets",
+    src: "/icons/custom-net.png",
+    href: "/shop/custom-nets"
   },
 ];
 
 export const incentives = [
   {
-    name: "Free Shipping",
+    name: "Verified Sellers",
     description:
-      "Our shipping is completely free and that is completely good for our customers.",
-    imageSrc: "/shipping icon.png",
+      "All sellers are verified to ensure trustworthy transactions.",
+    imageSrc: "/icons/verified-seller.png",
   },
   {
-    name: "24/7 Customer Support",
+    name: "Secure Payments",
     description:
-      "Our support is working all day and night to answer any question you have.",
-    imageSrc: "/support icon.png",
+      "Your payments are protected with secure payment processing.",
+    imageSrc: "/icons/secure-payment.png",
   },
   {
-    name: "Fast Shopping Cart",
+    name: "Buyer Protection",
     description:
-      "We have super fast shopping experience and you will enjoy it.",
-    imageSrc: "/fast shopping icon.png",
+      "We protect your purchases with our buyer protection program.",
+    imageSrc: "/icons/buyer-protection.png",
   },
 ];
 

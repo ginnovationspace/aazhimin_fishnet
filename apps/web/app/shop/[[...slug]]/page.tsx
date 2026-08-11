@@ -26,7 +26,7 @@ const ShopPage = async ({ params, searchParams }: { params: Promise<{ slug?: str
   // Await both params and searchParams
   const awaitedParams = await params;
   const awaitedSearchParams = await searchParams;
-  
+
   return (
     <div className="text-black bg-white">
       <div className=" max-w-screen-2xl mx-auto px-10 max-sm:px-5">
@@ -38,7 +38,7 @@ const ShopPage = async ({ params, searchParams }: { params: Promise<{ slug?: str
               <h2 className="text-2xl font-bold max-sm:text-xl max-[400px]:text-lg uppercase">
                 {awaitedParams?.slug && awaitedParams?.slug[0]?.length > 0
                   ? sanitize(improveCategoryText(awaitedParams?.slug[0]))
-                  : "All products"}
+                  : "All Fishnets"}
               </h2>
 
               <SortBy />

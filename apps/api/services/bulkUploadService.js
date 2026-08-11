@@ -203,7 +203,7 @@ async function canDeleteProductsForBatch(prisma, batchId) {
     return { canDelete: true, blockedProductIds: [] };
   }
 
-  const referenced = await prisma.customer_order_product.findMany({
+  const referenced = await prisma.orderItem.findMany({
     where: { productId: { in: productIds } },
     select: { productId: true },
   });

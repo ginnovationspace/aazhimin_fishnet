@@ -1,227 +1,296 @@
-// *********************
-// Role of the component: Enhanced footer component with better UX and features
-// Name of the component: Footer.tsx
-// Developer: Enhanced by Claude
-// Version: 2.0
-// Component call: <Footer />
-// Input parameters: no input parameters
-// Output: Enhanced footer with social media, newsletter, and better visual hierarchy
-// *********************
-
 "use client";
 
-import { navigation } from "@/lib/utils";
-import Image from "next/image";
+import Link from "next/link";
 import React, { useState } from "react";
-import { FaFacebook, FaTwitter, FaInstagram, FaYoutube, FaTiktok } from "react-icons/fa6";
+import {
+  FaFacebook,
+  FaInstagram,
+  FaYoutube,
+} from "react-icons/fa6";
+
+type NewsletterStatus = "success" | "error" | null;
 
 const Footer = () => {
   const [newsletterEmail, setNewsletterEmail] = useState("");
-  const [newsletterStatus, setNewsletterStatus] = useState(null); // null, 'success', 'error'
+  const [newsletterStatus, setNewsletterStatus] =
+    useState<NewsletterStatus>(null);
 
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
+  const handleNewsletterSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (newsletterEmail.trim()) {
-      // In a real app, this would call an API to subscribe
-      setNewsletterStatus('success');
-      setNewsletterEmail("");
-      // Reset status after 3 seconds
-      setTimeout(() => setNewsletterStatus(null), 3000);
-    } else {
-      setNewsletterStatus('error');
-      setTimeout(() => setNewsletterStatus(null), 3000);
+
+    const email = newsletterEmail.trim();
+
+    if (!email || !email.includes("@")) {
+      setNewsletterStatus("error");
+
+      setTimeout(() => {
+        setNewsletterStatus(null);
+      }, 3000);
+
+      return;
     }
+
+    setNewsletterStatus("success");
+    setNewsletterEmail("");
+
+    setTimeout(() => {
+      setNewsletterStatus(null);
+    }, 3000);
   };
 
   return (
-    <footer className="bg-white" aria-labelledby="footer-heading">
-      <div>
-        <h2 id="footer-heading" className="sr-only">
-          Footer
-        </h2>
-        <div className="mx-auto max-w-screen-2xl px-6 lg:px-8 pt-16 pb-10">
-          <div className="xl:grid xl:grid-cols-3 xl:gap-8">
-            {/* Logo Section */}
-            <div className="flex flex-col items-center">
-              <Image
-                src="/logo v1.png"
-                alt="Aazhimin logo"
-                width={200}
-                height={200}
-                className="h-auto w-auto mb-4"
-              />
-              <p className="text-center text-gray-600">
-                Equipping anglers since 2024
-              </p>
-              {/* Social Media */}
-              <div className="mt-4 flex gap-3">
-                <a
-                  href="#"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-blue-600 hover:text-white transition-colors text-blue-500"
-                >
-                  <FaFacebook className="w-5 h-5" />
-                </a>
-                <a
-                  href="#"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-blue-500 hover:text-white transition-colors text-blue-400"
-                >
-                  <FaTwitter className="w-5 h-5" />
-                </a>
-                <a
-                  href="#"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-pink-500 hover:text-white transition-colors text-pink-500"
-                >
-                  <FaInstagram className="w-5 h-5" />
-                </a>
-                <a
-                  href="#"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-500 hover:text-white transition-colors text-red-500"
-                >
-                  <FaYoutube className="w-5 h-5" />
-                </a>
-                <a
-                  href="#"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-black hover:text-white transition-colors text-black"
-                >
-                  <FaTiktok className="w-5 h-5" />
-                </a>
-              </div>
-            </div>
+    <footer className="border-t border-slate-200 bg-white">
+      <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
+        {/* Main footer */}
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-5">
+          {/* Brand */}
+          <div className="lg:col-span-2">
+            <Link
+              href="/"
+              className="text-2xl font-bold tracking-tight text-sky-700"
+            >
+              Aazhimin
+            </Link>
 
-            {/* Navigation Columns */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold leading-6 text-blue-600 mb-4">
-                Shop
-              </h3>
-              <ul className="space-y-2">
-                {navigation.sale.map((item) => (
-                  <li key={item.name}>
-                    <a
-                      href={item.href}
-                      className="text-sm leading-5 text-gray-600 hover:text-blue-600 transition-colors duration-200"
-                    >
-                      {item.name}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <p className="mt-4 max-w-md text-sm leading-6 text-slate-600">
+              A specialized marketplace for fishnets and fishing equipment,
+              connecting buyers and sellers.
+            </p>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold leading-6 text-blue-600 mb-4">
-                About
-              </h3>
-              <ul className="space-y-2">
-                {navigation.about.map((item) => (
-                  <li key={item.name}>
-                    <a
-                      href={item.href}
-                      className="text-sm leading-5 text-gray-600 hover:text-blue-600 transition-colors duration-200"
-                    >
-                      {item.name}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <p className="mt-3 text-sm text-slate-500">
+              Discover, compare, and purchase fishnets from trusted sellers.
+            </p>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold leading-6 text-blue-600 mb-4">
-                Support
-              </h3>
-              <ul className="space-y-2">
-                {navigation.help.map((item) => (
-                  <li key={item.name}>
-                    <a
-                      href={item.href}
-                      className="text-sm leading-5 text-gray-600 hover:text-blue-600 transition-colors duration-200"
-                    >
-                      {item.name}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {/* Social links */}
+            <div className="mt-6 flex items-center gap-3">
+              <a
+                href="#"
+                aria-label="Facebook"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-sky-500 hover:text-sky-600"
+              >
+                <FaFacebook />
+              </a>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold leading-6 text-blue-600 mb-4">
-                Buying Guide
-              </h3>
-              <ul className="space-y-2">
-                {navigation.buy.map((item) => (
-                  <li key={item.name}>
-                    <a
-                      href={item.href}
-                      className="text-sm leading-5 text-gray-600 hover:text-blue-600 transition-colors duration-200"
-                    >
-                      {item.name}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+              <a
+                href="#"
+                aria-label="Instagram"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-sky-500 hover:text-sky-600"
+              >
+                <FaInstagram />
+              </a>
+
+              <a
+                href="#"
+                aria-label="YouTube"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-sky-500 hover:text-sky-600"
+              >
+                <FaYoutube />
+              </a>
             </div>
           </div>
 
-          {/* Newsletter Section */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <h3 className="text-lg font-bold text-center text-blue-600 mb-4">
-              Stay Updated
+          {/* Shop */}
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">
+              Shop
             </h3>
-            <p className="text-center text-gray-600 mb-4 max-w-xl mx-auto">
-              Get the latest fishing tips, product launches, and exclusive offers
+
+            <ul className="mt-4 space-y-3">
+              <li>
+                <Link
+                  href="/products"
+                  className="text-sm text-slate-600 transition hover:text-sky-600"
+                >
+                  All Fishnets
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  href="/categories"
+                  className="text-sm text-slate-600 transition hover:text-sky-600"
+                >
+                  Categories
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  href="/cart"
+                  className="text-sm text-slate-600 transition hover:text-sky-600"
+                >
+                  Cart
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  href="/orders"
+                  className="text-sm text-slate-600 transition hover:text-sky-600"
+                >
+                  My Orders
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Sell */}
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">
+              Sell
+            </h3>
+
+            <ul className="mt-4 space-y-3">
+              <li>
+                <Link
+                  href="/seller"
+                  className="text-sm text-slate-600 transition hover:text-sky-600"
+                >
+                  Seller Dashboard
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  href="/seller/products"
+                  className="text-sm text-slate-600 transition hover:text-sky-600"
+                >
+                  My Products
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  href="/seller/orders"
+                  className="text-sm text-slate-600 transition hover:text-sky-600"
+                >
+                  Seller Orders
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  href="/seller/products/new"
+                  className="text-sm text-slate-600 transition hover:text-sky-600"
+                >
+                  Add Fishnet
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Support */}
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">
+              Support
+            </h3>
+
+            <ul className="mt-4 space-y-3">
+              <li>
+                <Link
+                  href="/help"
+                  className="text-sm text-slate-600 transition hover:text-sky-600"
+                >
+                  Help Center
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  href="/shipping"
+                  className="text-sm text-slate-600 transition hover:text-sky-600"
+                >
+                  Shipping
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  href="/returns"
+                  className="text-sm text-slate-600 transition hover:text-sky-600"
+                >
+                  Returns
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  href="/contact"
+                  className="text-sm text-slate-600 transition hover:text-sky-600"
+                >
+                  Contact Us
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Newsletter */}
+        <div className="mt-12 border-t border-slate-200 pt-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <h3 className="text-lg font-semibold text-slate-900">
+              Get fishing-net marketplace updates
+            </h3>
+
+            <p className="mt-2 text-sm text-slate-500">
+              Receive new fishnet listings and marketplace updates.
             </p>
-            <form onSubmit={handleNewsletterSubmit} className="max-w-xl mx-auto flex flex-col sm:flex-row">
+
+            <form
+              onSubmit={handleNewsletterSubmit}
+              className="mx-auto mt-5 flex max-w-lg flex-col gap-3 sm:flex-row"
+            >
               <input
                 type="email"
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
-                placeholder="Enter your email address"
-                className="px-4 py-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-[200px] sm:mr-2"
+                placeholder="Your email address"
+                aria-label="Email address"
+                className="min-w-0 flex-1 rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
               />
+
               <button
                 type="submit"
-                className="px-5 py-3 bg-blue-600 text-white font-medium rounded-r-lg hover:bg-blue-700 transition-colors flex-1 sm:w-auto"
+                className="rounded-lg bg-sky-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
               >
                 Subscribe
               </button>
-              {newsletterStatus === "success" && (
-                <p className="mt-2 text-center text-green-600 text-sm">
-                  Thanks for subscribing!
-                </p>
-              )}
-              {newsletterStatus === "error" && (
-                <p className="mt-2 text-center text-red-600 text-sm">
-                  Please enter a valid email address
-                </p>
-              )}
             </form>
-          </div>
 
-          {/* Bottom Bar */}
-          <div className="mt-8 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
-            <p className="flex flex-col sm:flex-row justify-center gap-2">
-              <span>© 2024 Aazhimin Fishing Net. All rights reserved.</span>
-              <span>
-                <a href="#" className="hover:text-blue-600 transition-colors">
-                  Privacy Policy
-                </a>
-              </span>
-              <span>
-                <a href="#" className="hover:text-blue-600 transition-colors">
-                  Terms of Service
-                </a>
-              </span>
-            </p>
+            {newsletterStatus === "success" && (
+              <p className="mt-3 text-sm text-emerald-600">
+                Thanks for subscribing.
+              </p>
+            )}
+
+            {newsletterStatus === "error" && (
+              <p className="mt-3 text-sm text-red-600">
+                Please enter a valid email address.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom */}
+        <div className="mt-10 flex flex-col gap-4 border-t border-slate-200 pt-6 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            © {new Date().getFullYear()} Aazhimin. All rights reserved.
+          </p>
+
+          <div className="flex gap-5">
+            <Link
+              href="/privacy"
+              className="transition hover:text-sky-600"
+            >
+              Privacy
+            </Link>
+
+            <Link
+              href="/terms"
+              className="transition hover:text-sky-600"
+            >
+              Terms
+            </Link>
           </div>
         </div>
       </div>

@@ -16,19 +16,15 @@ import { FaMinus } from "react-icons/fa6";
 
 const QuantityInputCart = ({ product } : { product: ProductInCart }) => {
   const [quantityCount, setQuantityCount] = useState<number>(product.amount);
-  const { updateCartAmount, calculateTotals } = useProductStore();
+  const updateCartAmount = useProductStore(state => state.updateCartAmount);
 
   const handleQuantityChange = (actionName: string): void => {
     if (actionName === "plus") {
       setQuantityCount(() => quantityCount + 1);
       updateCartAmount(product.id, quantityCount + 1);
-      calculateTotals();
-
-      
     } else if (actionName === "minus" && quantityCount !== 1) {
       setQuantityCount(() => quantityCount - 1);
       updateCartAmount(product.id, quantityCount - 1);
-      calculateTotals();
     }
   };
 

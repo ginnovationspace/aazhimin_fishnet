@@ -1,142 +1,236 @@
-// *********************
-// Role of the component: Enhanced product item component with improved UI/UX
-// Name of the component: ProductItem.tsx
-// Developer: Enhanced by Claude
-// Version: 2.0
-// Component call: <ProductItem product={product} color={color} />
-// Input parameters: { product: Product; color: string; }
-// Output: Product item component with hover effects, quick view, and better visual hierarchy
-// *********************
-
 "use client";
 
 import Image from "next/image";
-import React, { useState } from "react";
 import Link from "next/link";
-import { FaHeart, FaEye, faCartPlus } from "react-icons/fa";
+import React from "react";
+import { FaHeart } from "react-icons/fa6";
 
 import { sanitize } from "@/lib/sanitize";
 import { useWishlistStore } from "@/app/_zustand/wishlistStore";
 import { useProductStore } from "@/app/_zustand/store";
 
+export interface Product {
+  id: string;
+  title: string;
+  price: number;
+  mainImage?: string;
+  slug?: string;
+  rating?: number;
+  inStock?: number | boolean;
+  merchantId?: string;
+  sellerName?: string;
+
+  // Fishnet-specific fields
+  netType?: string;
+  meshSize?: string;
+  material?: string;
+  netLength?: number | string;
+  netHeight?: number | string;
+  color?: string;
+}
+
+interface ProductItemProps {
+  product: Product;
+  color?: string;
+}
+
 const ProductItem = ({
   product,
-  color,
-}: {
-  product: Product;
-  color: string;
-}) => {
-  const [isHovered, setIsHovered] = useState(false);
+  color = "black",
+}: ProductItemProps) => {
   const { wishlist, setWishlist } = useWishlistStore();
-  const { addToCart } = useProductStore(); // Using the product store which has addToCart action
+  const { addToCart } = useProductStore();
 
-  const isInWishlist = wishlist.some(item => item.id === product.id);
+  const isInWishlist = wishlist.some(
+    (item) => item.id === product.id
+  );
 
-  const handleWishlistToggle = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent link navigation
+  const productSlug = product.slug || product.id;
+
+  const stockCount =
+    typeof product.inStock === "number"
+      ? product.inStock
+      : product.inStock
+        ? 1
+        : 0;
+
+  const handleWishlistToggle = (
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     if (isInWishlist) {
-      setWishlist(wishlist.filter(item => item.id !== product.id));
-    } else {
-      setWishlist([...wishlist, { ...product, quantity: 1 }]);
+      setWishlist(
+        wishlist.filter((item) => item.id !== product.id)
+      );
+      return;
     }
+
+    setWishlist([
+      ...wishlist,
+      {
+        ...product,
+        quantity: 1,
+      },
+    ]);
   };
 
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent link navigation
-    addToCart(product);
-    // Could show a toast notification here
+  const handleAddToCart = (
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    addToCart({
+      id: product.id,
+      title: product.title,
+      price: product.price,
+      image: product.mainImage || "",
+      amount: 1,
+      merchantId: product.merchantId || "",
+      sellerName: product.sellerName || "Unknown Seller",
+    });
   };
 
   return (
-    <div
-      className="relative group hover:shadow-lg transition-shadow duration-300 rounded-lg overflow-hidden bg-white"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Product Image with Hover Effect */}
-      <div className="relative h-48 w-full">
-        <Link href={`/product/${product.slug}`} className="block h-full">
+    <article className="group relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+      <div className="relative aspect-square overflow-hidden bg-gray-100">
+        <Link
+          href={`/product/${productSlug}`}
+          className="block h-full w-full"
+          aria-label={`View ${sanitize(product.title)}`}
+        >
           <Image
             src={
               product.mainImage
                 ? `/${product.mainImage}`
                 : "/product_placeholder.jpg"
             }
-            alt={sanitize(product?.title) || "Product image"}
-            className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+            alt={sanitize(product.title) || "Fishnet image"}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
-          {/* Quick View/Action Buttons on Hover */}
-          {isHovered && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 text-white">
-              <div className="space-y-3">
-                <button
-                  onClick={handleWishlistToggle}
-                  className="p-2 rounded hover:bg-white hover:bg-opacity-20 transition-colors"
-                  aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
-                >
-                  <FaHeart
-                    className={`${isInWishlist ? "text-red-500" : "text-white"} text-xl`}
-                  />
-                </button>
-                <button
-                  onClick={handleAddToCart}
-                  className="p-2 rounded hover:bg-white hover:bg-opacity-20 transition-colors"
-                  aria-label="Add to cart"
-                >
-                  <FaEye className="text-xl" /> {/* Using eye for quick view, could change to cart */}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Sale/Badge Ribbon */}
-          {product.rating && product.rating >= 4 && (
-            <div className="absolute top-3 left-3 bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded">
-              �� ⭐ {product.rating}
-            </div>
-          )}
         </Link>
-      </div>
 
-      {/* Product Info */}
-      <div className="p-4">
-        <Link
-          href={`/product/${product.slug}`}
-          className="mb-2 line-clamp-2"
+        <button
+          type="button"
+          onClick={handleWishlistToggle}
+          aria-label={
+            isInWishlist
+              ? "Remove from wishlist"
+              : "Add to wishlist"
+          }
+          className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur transition-all hover:scale-110 hover:bg-white"
         >
-          <h3
-            className={`text-${color === "black" ? "black" : "white"} font-semibold line-clamp-2`}
-          >
-            {sanitize(product.title)}
-          </h3>
-        </Link>
+          <FaHeart
+            className={
+              isInWishlist
+                ? "text-lg text-red-500"
+                : "text-lg text-gray-500"
+            }
+          />
+        </button>
 
-        <p className="mt-2 font-bold text-xl">
-          ${product.price}
-        </p>
-
-        {/* Availability Badge */}
-        <div className="mt-2 flex items-center gap-2">
-          {product.inStock > 0 ? (
-            <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded">
-              In Stock ({product.inStock})
+        <div className="absolute bottom-3 left-3">
+          {stockCount > 0 ? (
+            <span className="rounded bg-green-600 px-2 py-1 text-xs font-medium text-white shadow-sm">
+              In Stock
             </span>
           ) : (
-            <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 rounded">
+            <span className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white shadow-sm">
               Out of Stock
             </span>
           )}
         </div>
       </div>
 
-      {/* Primary Action Button */}
-      <Link
-        href={`/product/${product.slug}`}
-        className="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-      >
-        View Details
-      </Link>
-    </div>
+      <div className="p-4">
+        <Link
+          href={`/product/${productSlug}`}
+          className="block"
+        >
+          <h3
+            className={`line-clamp-2 min-h-[48px] text-base font-semibold ${
+              color === "white"
+                ? "text-white"
+                : "text-gray-900"
+            } transition-colors hover:text-blue-600`}
+          >
+            {sanitize(product.title)}
+          </h3>
+        </Link>
+
+        <div className="mt-2 space-y-1 text-sm text-gray-600">
+          {product.netType && (
+            <p className="flex items-center gap-1">
+              <span className="font-medium">Net Type:</span>
+              <span>{sanitize(product.netType)}</span>
+            </p>
+          )}
+
+          {product.material && (
+            <p className="flex items-center gap-1">
+              <span className="font-medium">Material:</span>
+              <span>{sanitize(product.material)}</span>
+            </p>
+          )}
+
+          {product.meshSize && (
+            <p className="flex items-center gap-1">
+              <span className="font-medium">Mesh Size:</span>
+              <span>{sanitize(product.meshSize)}</span>
+            </p>
+          )}
+
+          {(product.netLength || product.netHeight) && (
+            <p className="flex items-center gap-1">
+              <span className="font-medium">Size:</span>
+              <span>
+                {product.netLength}
+                {product.netHeight
+                  ? ` x ${product.netHeight}`
+                  : ""}
+                {product.netLength && product.netHeight
+                  ? "m"
+                  : ""}
+              </span>
+            </p>
+          )}
+        </div>
+
+        <div className="mt-4 flex items-center justify-between">
+          <p className="text-xl font-bold text-gray-900">
+            ${Number(product.price || 0).toFixed(2)}
+          </p>
+
+          {stockCount > 0 && (
+            <span className="text-xs text-gray-500">
+              {stockCount} available
+            </span>
+          )}
+        </div>
+
+        <div className="mt-4 flex gap-2">
+          <Link
+            href={`/product/${productSlug}`}
+            className="flex flex-1 items-center justify-center rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-blue-600 hover:text-blue-600"
+          >
+            View Details
+          </Link>
+
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            disabled={stockCount <= 0}
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+          >
+            Add to Cart
+          </button>
+        </div>
+      </div>
+    </article>
   );
 };
 

@@ -10,6 +10,7 @@
 
 import Link from "next/link";
 import React, { type ReactNode } from "react";
+import { sanitize } from "@/lib/sanitize";
 
 interface CategoryItemProps {
   children: ReactNode;

@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { FaBell } from 'react-icons/fa6';
 import { useUnreadCount } from '@/hooks/useNotifications';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/auth-client';
 
 interface NotificationBellProps {
   className?: string;

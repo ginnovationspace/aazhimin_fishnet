@@ -1,7 +1,7 @@
 const prisma = require("@aazhimin/database");
 const { asyncHandler, AppError } = require("../middleware/errorHandler");
 
-async function getProductBySlug(request, response) {
+const getProductBySlug = asyncHandler(async (request, response) => {
   const { slug } = request.params;
   const product = await prisma.product.findMany({
     where: {
@@ -17,6 +17,6 @@ async function getProductBySlug(request, response) {
     throw new AppError("Product not found", 404);
   }
   return response.status(200).json(foundProduct);
-}
+});
 
 module.exports = { getProductBySlug };

@@ -7,97 +7,86 @@ export type ProductInCart = {
   price: number;
   image: string;
   amount: number;
+  merchantId: string;
+  sellerName: string; // Added seller name for display
 };
 
 export type State = {
   products: ProductInCart[];
-  allQuantity: number;
-  total: number;
 };
 
 export type Actions = {
   addToCart: (newProduct: ProductInCart) => void;
   removeFromCart: (id: string) => void;
   updateCartAmount: (id: string, quantity: number) => void;
-  calculateTotals: () => void;
   clearCart: () => void;
+};
+
+// Getter functions for derived state
+const getAllQuantity = (products: ProductInCart[]) => {
+  return products.reduce((sum, item) => sum + item.amount, 0);
+};
+
+const getTotal = (products: ProductInCart[]) => {
+  return products.reduce((sum, item) => sum + (item.amount * item.price), 0);
 };
 
 export const useProductStore = create<State & Actions>()(
   persist(
     (set) => ({
       products: [],
-      allQuantity: 0,
-      total: 0,
       addToCart: (newProduct) => {
         set((state) => {
-          const cartItem = state.products.find(
+          const existingItemIndex = state.products.findIndex(
             (item) => item.id === newProduct.id
           );
-          if (!cartItem) {
-            return { products: [...state.products, newProduct] };
+          if (existingItemIndex === -1) {
+            // Item not in cart, add it
+            return {
+              products: [...state.products, newProduct]
+            };
           } else {
-            state.products.map((product) => {
-              if (product.id === cartItem.id) {
-                product.amount += newProduct.amount;
-              }
-            });
+            // Item already in cart, update its amount
+            const updatedProducts = [...state.products];
+            updatedProducts[existingItemIndex] = {
+              ...updatedProducts[existingItemIndex],
+              amount: updatedProducts[existingItemIndex].amount + newProduct.amount
+            };
+            return { products: updatedProducts };
           }
-          return { products: [...state.products] };
-        });
-      },
-      clearCart: () => {
-        set((state: any) => {
-          
-          return {
-            products: [],
-            allQuantity: 0,
-            total: 0,
-          };
         });
       },
       removeFromCart: (id) => {
         set((state) => {
-          state.products = state.products.filter(
-            (product: ProductInCart) => product.id !== id
-          );
-          return { products: state.products };
-        });
-      },
-
-      calculateTotals: () => {
-        set((state) => {
-          let amount = 0;
-          let total = 0;
-          state.products.forEach((item) => {
-            amount += item.amount;
-            total += item.amount * item.price;
-          });
-
           return {
-            products: state.products,
-            allQuantity: amount,
-            total: total,
+            products: state.products.filter(item => item.id !== id)
           };
         });
       },
       updateCartAmount: (id, amount) => {
         set((state) => {
-          const cartItem = state.products.find((item) => item.id === id);
-
-          if (!cartItem) {
-            return { products: [...state.products] };
+          const existingItemIndex = state.products.findIndex(
+            (item) => item.id === id
+          );
+          if (existingItemIndex === -1) {
+            // Item not found, do nothing
+            return state;
           } else {
-            state.products.map((product) => {
-              if (product.id === cartItem.id) {
-                product.amount = amount;
-              }
-            });
+            // Update the amount
+            const updatedProducts = [...state.products];
+            updatedProducts[existingItemIndex] = {
+              ...updatedProducts[existingItemIndex],
+              amount: amount
+            };
+            return { products: updatedProducts };
           }
-
-          return { products: [...state.products] };
         });
       },
+      clearCart: () => {
+        set({
+          products: []
+        });
+      }
     }),
     {
       name: "products-storage", // name of the item in the storage (must be unique)
@@ -105,3 +94,18 @@ export const useProductStore = create<State & Actions>()(
     }
   )
 );
+
+// Derived state selectors (can be used in components)
+export const useCartQuantity = () => {
+  const products = useProductStore(state => state.products);
+  return getAllQuantity(products);
+};
+
+export const useCartTotal = () => {
+  const products = useProductStore(state => state.products);
+  return getTotal(products);
+};
+
+export const useCartProducts = () => {
+  return useProductStore(state => state.products);
+};

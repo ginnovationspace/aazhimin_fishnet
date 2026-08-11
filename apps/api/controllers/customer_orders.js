@@ -1,410 +1,294 @@
 const prisma = require("@aazhimin/database");
-const { validateOrderData, ValidationError } = require("@aazhimin/validation");
-const { createOrderUpdateNotification } = require("@aazhimin/notifications");
+const { asyncHandler, AppError } = require("../middleware/errorHandler");
 
-async function createCustomerOrder(request, response) {
-  try {
-    console.log("=== ORDER CREATION REQUEST ===");
-    console.log("Request body:", JSON.stringify(request.body, null, 2));
+const statusToLegacy = {
+  ORDER_PLACED: "processing",
+  PAYMENT_CONFIRMED: "processing",
+  PROCESSING: "processing",
+  READY_TO_SHIP: "processing",
+  SHIPPED: "processing",
+  OUT_FOR_DELIVERY: "processing",
+  DELIVERED: "delivered",
+  CANCELLED: "canceled",
+  REFUND_REQUESTED: "processing",
+  REFUNDED: "canceled",
+  DISPUTED: "processing",
+};
 
-    // Validate request body
-    if (!request.body || typeof request.body !== 'object') {
-      console.log("��❌ Invalid request body");
-      return response.status(400).json({
-        error: "Invalid request body",
-        details: "Request body must be a valid JSON object"
-      });
+const legacyToStatus = {
+  processing: "PROCESSING",
+  delivered: "DELIVERED",
+  canceled: "CANCELLED",
+  cancelled: "CANCELLED",
+};
+
+const toLegacyOrder = (order) => ({
+  id: order.id,
+  name: order.buyerName || "",
+  lastname: order.buyerLastname || "",
+  phone: order.buyerPhone || "",
+  email: order.buyerEmail || "",
+  company: order.buyerCompany || "",
+  adress: order.buyerAddress || "",
+  apartment: order.buyerApartment || "",
+  postalCode: order.buyerPostalCode || "",
+  city: order.buyerCity || "",
+  country: order.buyerCountry || "",
+  orderNotice: order.orderNotice || "",
+  status: statusToLegacy[order.status] || "processing",
+  total: Number(order.totalAmount || 0),
+  dateTime: order.placedAt,
+});
+
+const findOrCreateBuyer = async (email) => {
+  const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+
+  if (!normalizedEmail) {
+    throw new AppError("Email is required", 400);
+  }
+
+  const existingUser = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+  });
+
+  if (existingUser) {
+    return existingUser;
+  }
+
+  return prisma.user.create({
+    data: {
+      email: normalizedEmail,
+      role: "BUYER",
+    },
+  });
+};
+
+const resolveCartItems = (body) => {
+  const products = Array.isArray(body.products) ? body.products : [];
+
+  return products.map((product) => ({
+    productId: product.productId || product.id,
+    quantity: Number(product.quantity || product.amount || 1),
+    price: Number(product.price || 0),
+  }));
+};
+
+const createCustomerOrder = asyncHandler(async (request, response) => {
+  const {
+    name,
+    lastname,
+    phone,
+    email,
+    company,
+    adress,
+    apartment,
+    postalCode,
+    city,
+    country,
+    orderNotice,
+    total,
+    status,
+  } = request.body;
+
+  if (!name || !lastname || !phone || !email || !adress || !postalCode || !city || !country) {
+    throw new AppError("Missing required order information", 400);
+  }
+
+  const cartItems = resolveCartItems(request.body);
+
+  if (cartItems.length === 0) {
+    throw new AppError("Order must contain at least one product", 400);
+  }
+
+  for (const item of cartItems) {
+    if (!item.productId || !Number.isFinite(item.quantity) || item.quantity <= 0) {
+      throw new AppError("Invalid order product", 400);
     }
+  }
 
-    // Server-side validation
-    const validation = validateOrderData(request.body);
-    console.log("Validation result:", validation);
+  const user = await findOrCreateBuyer(email);
+  const productIds = cartItems.map((item) => item.productId);
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: { id: true, merchantId: true, price: true },
+  });
+  const productMap = new Map(products.map((product) => [product.id, product]));
 
-    if (!validation.isValid) {
-      console.log("��❌ Validation failed:", validation.errors);
-      return response.status(400).json({
-        error: "Validation failed",
-        details: validation.errors
-      });
-    }
+  if (products.length !== productIds.length) {
+    throw new AppError("One or more products were not found", 404);
+  }
 
-    const validatedData = validation.validatedData;
-    console.log("��✅ Validation passed, validated data:", validatedData);
+  const totalAmount = Math.round(Number(total || 0));
 
-    // Additional business logic validation
-    if (validatedData.total < 0.01) {
-      console.log("��❌ Invalid total amount");
-      return response.status(400).json({
-        error: "Invalid order total",
-        details: [{ field: 'total', message: 'Order total must be at least $0.01' }]
-      });
-    }
-
-    // Check for duplicate orders (same email and total within last 1 minute) - less strict
-    const oneMinuteAgo = new Date(Date.now() - 1 * 60 * 1000);
-    const duplicateOrder = await prisma.customer_order.findFirst({
-      where: {
-        email: validatedData.email,
-        total: validatedData.total,
-        dateTime: {
-          gte: oneMinuteAgo
-        }
-      }
-    });
-
-    if (duplicateOrder) {
-      console.log("��❌ Duplicate order detected (same email, amount, within 1 minute)");
-      return response.status(409).json({
-        error: "Duplicate order detected",
-        details: "An identical order was just created. Please wait a moment before creating another order with the same details."
-      });
-    }
-
-    console.log("Creating order in database...");
-    // Create the order with validated data
-    const corder = await prisma.customer_order.create({
+  const order = await prisma.$transaction(async (tx) => {
+    const marketplaceOrder = await tx.marketplaceOrder.create({
       data: {
-        name: validatedData.name,
-        lastname: validatedData.lastname,
-        phone: validatedData.phone,
-        email: validatedData.email,
-        company: validatedData.company,
-        adress: validatedData.adress,
-        apartment: validatedData.apartment,
-        postalCode: validatedData.postalCode,
-        status: validatedData.status,
-        city: validatedData.city,
-        country: validatedData.country,
-        orderNotice: validatedData.orderNotice,
-        total: validatedData.total,
-        dateTime: new Date()
+        userId: user.id,
+        status: legacyToStatus[status] || "ORDER_PLACED",
+        totalAmount,
+        buyerName: name,
+        buyerLastname: lastname,
+        buyerPhone: phone,
+        buyerEmail: email.trim().toLowerCase(),
+        buyerCompany: company || null,
+        buyerAddress: adress,
+        buyerApartment: apartment || null,
+        buyerPostalCode: postalCode,
+        buyerCity: city,
+        buyerCountry: country,
+        orderNotice: orderNotice || null,
       },
     });
 
-    console.log("��✅ Order created successfully:", corder);
-    console.log("Order ID:", corder.id);
+    const itemsByMerchant = new Map();
+    for (const item of cartItems) {
+      const product = productMap.get(item.productId);
+      const merchantItems = itemsByMerchant.get(product.merchantId) || [];
+      merchantItems.push({
+        ...item,
+        price: item.price || product.price,
+      });
+      itemsByMerchant.set(product.merchantId, merchantItems);
+    }
 
-    // Create notification for the user if they have an account
-    try {
-      let user = null;
+    for (const [merchantId, merchantItems] of itemsByMerchant.entries()) {
+      const sellerTotal = merchantItems.reduce(
+        (sum, item) => sum + Number(item.price) * Number(item.quantity),
+        0
+      );
+      const sellerOrder = await tx.sellerOrder.create({
+        data: {
+          marketplaceOrderId: marketplaceOrder.id,
+          merchantId,
+          status: legacyToStatus[status] || "ORDER_PLACED",
+          totalAmount: Math.round(sellerTotal),
+        },
+      });
 
-      // First, try to use userId if provided (from logged-in user)
-      if (request.body.userId) {
-        console.log(`���🔍 Using provided userId: ${request.body.userId}`);
-        user = await prisma.user.findUnique({
-          where: { id: request.body.userId }
+      for (const item of merchantItems) {
+        await tx.orderItem.create({
+          data: {
+            sellerOrderId: sellerOrder.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: Math.round(Number(item.price)),
+            totalPrice: Math.round(Number(item.price) * Number(item.quantity)),
+          },
         });
-        if (user) {
-          console.log(`��✅ Found user by ID: ${user.email}`);
-        } else {
-          console.log(`��❌ User not found with ID: ${request.body.userId}`);
-        }
-      }
-
-      // Fallback: search by email if no userId or user not found
-      if (!user) {
-        console.log(`���🔍 Searching user by email: ${validatedData.email}`);
-        user = await prisma.user.findUnique({
-          where: { email: validatedData.email }
-        });
-        if (user) {
-          console.log(`��✅ Found user by email: ${user.email}`);
-        }
-      }
-
-      if (user) {
-        await createOrderUpdateNotification(
-          user.id,
-          'confirmed',
-          corder.id,
-          validatedData.total
-        );
-        console.log(`���📧 Order confirmation notification sent to user: ${user.email}`);
-      } else {
-        console.log(`�ℹ��️  No user account found for email: ${validatedData.email} - notification skipped`);
-      }
-    } catch (notificationError) {
-      console.error('��❌ Failed to create order notification:', notificationError);
-      // Don't fail the order if notification fails
-    }
-
-    // Log successful order creation (for monitoring)
-    console.log(`Order created successfully: ID ${corder.id}, Email: ${validatedData.email}, Total: $${validatedData.total}`);
-
-    const responseData = {
-      id: corder.id,
-      message: "Order created successfully",
-      orderNumber: corder.id
-    };
-
-    console.log("Sending response:", responseData);
-    return response.status(201).json(responseData);
-
-  } catch (error) {
-    console.error("��❌ Error creating order:", error);
-
-    // Handle specific Prisma errors
-    if (error.code === 'P2002') {
-      return response.status(409).json({
-        error: "Order conflict",
-        details: "An order with this information already exists"
-      });
-    }
-
-    // Handle validation errors
-    if (error instanceof ValidationError) {
-      return response.status(400).json({
-        error: "Validation failed",
-        details: [{ field: error.field, message: error.message }]
-      });
-    }
-
-    // Generic error response
-    return response.status(500).json({
-      error: "Internal server error",
-      details: "Failed to create order. Please try again later."
-    });
-  }
-}
-
-async function updateCustomerOrder(request, response) {
-  try {
-    const { id } = request.params;
-
-    // Validate ID format
-    if (!id || typeof id !== 'string') {
-      return response.status(400).json({
-        error: "Invalid order ID",
-        details: "Order ID must be provided"
-      });
-    }
-
-    // Validate request body
-    if (!request.body || typeof request.body !== 'object') {
-      return response.status(400).json({
-        error: "Invalid request body",
-        details: "Request body must be a valid JSON object"
-      });
-    }
-
-    // Server-side validation for update data
-    const validation = validateOrderData(request.body);
-
-    if (!validation.isValid) {
-      return response.status(400).json({
-        error: "Validation failed",
-        details: validation.errors
-      });
-    }
-
-    const validatedData = validation.validatedData;
-
-    const existingOrder = await prisma.customer_order.findUnique({
-      where: {
-        id: id,
-      },
-    });
-
-    if (!existingOrder) {
-      return response.status(404).json({
-        error: "Order not found",
-        details: "The specified order does not exist"
-      });
-    }
-
-    const updatedOrder = await prisma.customer_order.update({
-      where: {
-        id: existingOrder.id,
-      },
-      data: {
-        name: validatedData.name,
-        lastname: validatedData.lastname,
-        phone: validatedData.phone,
-        email: validatedData.email,
-        company: validatedData.company,
-        adress: validatedData.adress,
-        apartment: validatedData.apartment,
-        postalCode: validatedData.postalCode,
-        status: validatedData.status,
-        city: validatedData.city,
-        country: validatedData.country,
-        orderNotice: validatedData.orderNotice,
-        total: validatedData.total,
-      },
-    });
-
-    // Create notification for status update if status changed
-    if (existingOrder.status !== validatedData.status) {
-      try {
-        const user = await prisma.user.findUnique({
-          where: { email: validatedData.email }
-        });
-
-        if (user) {
-          await createOrderUpdateNotification(
-            user.id,
-            validatedData.status,
-            updatedOrder.id,
-            validatedData.total
-          );
-          console.log(`���📧 Status update notification sent to user: ${user.email} - Status: ${validatedData.status}`);
-        }
-      } catch (notificationError) {
-        console.error('��❌ Failed to create status update notification:', notificationError);
       }
     }
 
-    console.log(`Order updated successfully: ID ${updatedOrder.id}`);
+    return marketplaceOrder;
+  });
 
-    return response.status(200).json(updatedOrder);
-  } catch (error) {
-    console.error("Error updating order:", error);
+  response.status(201).json({
+    id: order.id,
+    message: "Order created successfully",
+    orderNumber: order.id,
+  });
+});
 
-    if (error.code === 'P2025') {
-      return response.status(404).json({
-        error: "Order not found",
-        details: "The specified order does not exist"
-      });
-    }
+const updateCustomerOrder = asyncHandler(async (request, response) => {
+  const { id } = request.params;
 
-    if (error instanceof ValidationError) {
-      return response.status(400).json({
-        error: "Validation failed",
-        details: [{ field: error.field, message: error.message }]
-      });
-    }
-
-    return response.status(500).json({
-      error: "Internal server error",
-      details: "Failed to update order. Please try again later."
-    });
+  if (!id) {
+    throw new AppError("Order ID is required", 400);
   }
-}
 
-async function deleteCustomerOrder(request, response) {
-  try {
-    const { id } = request.params;
+  const order = await prisma.marketplaceOrder.findUnique({
+    where: { id },
+  });
 
-    if (!id || typeof id !== 'string') {
-      return response.status(400).json({
-        error: "Invalid order ID",
-        details: "Order ID must be provided"
-      });
-    }
-
-    const existingOrder = await prisma.customer_order.findUnique({
-      where: { id: id },
-    });
-
-    if (!existingOrder) {
-      return response.status(404).json({
-        error: "Order not found",
-        details: "The specified order does not exist"
-      });
-    }
-
-    await prisma.customer_order.delete({
-      where: {
-        id: id,
-      },
-    });
-
-    console.log(`Order deleted successfully: ID ${id}`);
-    return response.status(204).send();
-  } catch (error) {
-    console.error("Error deleting order:", error);
-
-    if (error.code === 'P2025') {
-      return response.status(404).json({
-        error: "Order not found",
-        details: "The specified order does not exist"
-      });
-    }
-
-    return response.status(500).json({
-      error: "Internal server error",
-      details: "Failed to delete order. Please try again later."
-    });
+  if (!order) {
+    throw new AppError("Order not found", 404);
   }
-}
 
-async function getCustomerOrder(request, response) {
-  try {
-    const { id } = request.params;
+  const updatedOrder = await prisma.marketplaceOrder.update({
+    where: { id },
+    data: {
+      status: legacyToStatus[request.body.status] || order.status,
+      buyerName: request.body.name ?? order.buyerName,
+      buyerLastname: request.body.lastname ?? order.buyerLastname,
+      buyerPhone: request.body.phone ?? order.buyerPhone,
+      buyerEmail: request.body.email ? request.body.email.trim().toLowerCase() : order.buyerEmail,
+      buyerCompany: request.body.company ?? order.buyerCompany,
+      buyerAddress: request.body.adress ?? order.buyerAddress,
+      buyerApartment: request.body.apartment ?? order.buyerApartment,
+      buyerPostalCode: request.body.postalCode ?? order.buyerPostalCode,
+      buyerCity: request.body.city ?? order.buyerCity,
+      buyerCountry: request.body.country ?? order.buyerCountry,
+      orderNotice: request.body.orderNotice ?? order.orderNotice,
+      totalAmount: request.body.total === undefined ? order.totalAmount : Math.round(Number(request.body.total)),
+    },
+  });
 
-    if (!id || typeof id !== 'string') {
-      return response.status(400).json({
-        error: "Invalid order ID",
-        details: "Order ID must be provided"
-      });
-    }
+  response.status(200).json(toLegacyOrder(updatedOrder));
+});
 
-    const order = await prisma.customer_order.findUnique({
-      where: {
-        id: id,
-      },
-    });
+const deleteCustomerOrder = asyncHandler(async (request, response) => {
+  const { id } = request.params;
 
-    if (!order) {
-      return response.status(404).json({
-        error: "Order not found",
-        details: "The specified order does not exist"
-      });
-    }
-
-    return response.status(200).json(order);
-  } catch (error) {
-    console.error("Error fetching order:", error);
-    return response.status(500).json({
-      error: "Internal server error",
-      details: "Failed to fetch order. Please try again later."
-    });
+  if (!id) {
+    throw new AppError("Order ID is required", 400);
   }
-}
 
-async function getAllOrders(request, response) {
-  try {
-    // Add pagination and filtering for better performance
-    const page = parseInt(request.query.page) || 1;
-    const limit = parseInt(request.query.limit) || 50;
-    const offset = (page - 1) * limit;
+  const order = await prisma.marketplaceOrder.findUnique({
+    where: { id },
+  });
 
-    // Validate pagination parameters
-    if (page < 1 || limit < 1 || limit > 100) {
-      return response.status(400).json({
-        error: "Invalid pagination parameters",
-        details: "Page must be >= 1, limit must be between 1 and 100"
-      });
-    }
-
-    const [orders, totalCount] = await Promise.all([
-      prisma.customer_order.findMany({
-        skip: offset,
-        take: limit,
-        orderBy: {
-          dateTime: 'desc'
-        }
-      }),
-      prisma.customer_order.count()
-    ]);
-
-    return response.json({
-      orders,
-      pagination: {
-        page,
-        limit,
-        total: totalCount,
-        totalPages: Math.ceil(totalCount / limit)
-      }
-    });
-  } catch (error) {
-    console.error("Error fetching orders:", error);
-    return response.status(500).json({
-      error: "Internal server error",
-      details: "Failed to fetch orders. Please try again later."
-    });
+  if (!order) {
+    throw new AppError("Order not found", 404);
   }
-}
+
+  await prisma.marketplaceOrder.delete({
+    where: { id },
+  });
+
+  response.status(204).send();
+});
+
+const getCustomerOrder = asyncHandler(async (request, response) => {
+  const { id } = request.params;
+
+  if (!id) {
+    throw new AppError("Order ID is required", 400);
+  }
+
+  const order = await prisma.marketplaceOrder.findUnique({
+    where: { id },
+  });
+
+  if (!order) {
+    throw new AppError("Order not found", 404);
+  }
+
+  response.status(200).json(toLegacyOrder(order));
+});
+
+const getAllOrders = asyncHandler(async (request, response) => {
+  const page = Math.max(Number(request.query.page) || 1, 1);
+  const limit = Math.min(Math.max(Number(request.query.limit) || 50, 1), 100);
+  const skip = (page - 1) * limit;
+
+  const [orders, total] = await Promise.all([
+    prisma.marketplaceOrder.findMany({
+      skip,
+      take: limit,
+      orderBy: { placedAt: "desc" },
+    }),
+    prisma.marketplaceOrder.count(),
+  ]);
+
+  response.json({
+    orders: orders.map(toLegacyOrder),
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  });
+});
 
 module.exports = {
   createCustomerOrder,

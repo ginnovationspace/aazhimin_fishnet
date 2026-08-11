@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/auth-client';
 import { useNotificationStore } from '@/app/_zustand/notificationStore';
 import { notificationApi } from '@/lib/notification-api';
 import { NotificationFilters } from '@/types/notification';

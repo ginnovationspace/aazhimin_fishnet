@@ -2,7 +2,18 @@ const prisma = require("@aazhimin/database");
 const { asyncHandler, handleServerError, AppError } = require("../middleware/errorHandler");
 
 // Security: Define whitelists for allowed filter types and operators
-const ALLOWED_FILTER_TYPES = ['price', 'rating', 'category', 'inStock', 'outOfStock'];
+const ALLOWED_FILTER_TYPES = [
+  'price',
+  'rating',
+  'category',
+  'inStock',
+  'outOfStock',
+  'netType',
+  'material',
+  'meshSize',
+  'color',
+  'usage'
+];
 const ALLOWED_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'equals', 'contains'];
 const ALLOWED_SORT_VALUES = ['defaultSort', 'titleAsc', 'titleDesc', 'lowPrice', 'highPrice'];
 
@@ -79,6 +90,11 @@ function validateAndSanitizeFilterValue(filterType, value) {
     return Number.isNaN(numValue) ? null : numValue;
   }
 
+  // For text-based filter types, return string
+  if (['netType', 'material', 'meshSize', 'color', 'usage'].includes(filterType)) {
+    return strValue;
+  }
+
   // Default: return string
   return strValue;
 }
@@ -124,6 +140,16 @@ const getAllProducts = asyncHandler(async (request, response) => {
             filterType = "inStock";
           } else if (queryParam.includes("outOfStock")) {
             filterType = "outOfStock";
+          } else if (queryParam.includes("netType")) {
+            filterType = "netType";
+          } else if (queryParam.includes("material")) {
+            filterType = "material";
+          } else if (queryParam.includes("meshSize")) {
+            filterType = "meshSize";
+          } else if (queryParam.includes("color")) {
+            filterType = "color";
+          } else if (queryParam.includes("usage")) {
+            filterType = "usage";
           } else {
             // Skip unknown filter types
             continue;
@@ -275,7 +301,6 @@ const getAllProductsOld = asyncHandler(async (request, response) => {
 
 const createProduct = asyncHandler(async (request, response) => {
   const {
-    merchantId,
     slug,
     title,
     mainImage,
@@ -284,15 +309,38 @@ const createProduct = asyncHandler(async (request, response) => {
     manufacturer,
     categoryId,
     inStock,
+    // Fishnet-specific fields
+    netType,
+    meshSize,
+    netLength,
+    netHeight,
+    material,
+    color,
+    threadDiameter,
+    breakingStrength,
+    usage,
+    targetFishOrSpecies,
+    waterType,
+    countryOfOrigin,
+    weight,
+    customizationAvailability,
+    shippingInformation
   } = request.body;
+
+  // Get authenticated user
+  const userId = request.user.id;
+
+  // Find merchant for this user
+  const merchant = await prisma.merchant.findUnique({
+    where: { userId },
+  });
+
+  if (!merchant) {
+    throw new AppError("Merchant profile not found. Please register as a seller first.", 403);
+  }
 
   if (!title) {
     throw new AppError("Missing required field: title", 400);
-  }
-
-  // Basic validation
-  if (!merchantId) {
-    throw new AppError("Missing required field: merchantId", 400);
   }
 
   if (!slug) {
@@ -309,7 +357,7 @@ const createProduct = asyncHandler(async (request, response) => {
 
   const product = await prisma.product.create({
     data: {
-      merchantId,
+      merchantId: merchant.id, // Use authenticated user's merchantId
       slug,
       title,
       mainImage,
@@ -319,6 +367,21 @@ const createProduct = asyncHandler(async (request, response) => {
       manufacturer,
       categoryId,
       inStock,
+      netType,
+      meshSize,
+      netLength,
+      netHeight,
+      material,
+      color,
+      threadDiameter,
+      breakingStrength,
+      usage,
+      targetFishOrSpecies,
+      waterType,
+      countryOfOrigin,
+      weight,
+      customizationAvailability,
+      shippingInformation,
     },
   });
   return response.status(201).json(product);
@@ -328,7 +391,6 @@ const createProduct = asyncHandler(async (request, response) => {
 const updateProduct = asyncHandler(async (request, response) => {
   const { id } = request.params;
   const {
-    merchantId,
     slug,
     title,
     mainImage,
@@ -337,7 +399,35 @@ const updateProduct = asyncHandler(async (request, response) => {
     manufacturer,
     categoryId,
     inStock,
+    // Fishnet-specific fields
+    netType,
+    meshSize,
+    netLength,
+    netHeight,
+    material,
+    color,
+    threadDiameter,
+    breakingStrength,
+    usage,
+    targetFishOrSpecies,
+    waterType,
+    countryOfOrigin,
+    weight,
+    customizationAvailability,
+    shippingInformation
   } = request.body;
+
+  // Get authenticated user
+  const userId = request.user.id;
+
+  // Find merchant for this user
+  const merchant = await prisma.merchant.findUnique({
+    where: { userId },
+  });
+
+  if (!merchant) {
+    throw new AppError("Merchant profile not found", 403);
+  }
 
   // Basic validation
   if (!id) {
@@ -355,22 +445,41 @@ const updateProduct = asyncHandler(async (request, response) => {
     throw new AppError("Product not found", 404);
   }
 
+  // Authorization: check if product belongs to user's merchant or user is admin
+  if (existingProduct.merchantId !== merchant.id && request.user.role !== "ADMIN") {
+    throw new AppError("Unauthorized to update this product", 403);
+  }
+
   // Updating found product
   const updatedProduct = await prisma.product.update({
     where: {
       id,
     },
     data: {
-      merchantId: merchantId,
+      slug: slug,
       title: title,
       mainImage: mainImage,
-      slug: slug,
       price: price,
-      rating: rating,
+      rating: 5, // Keep rating as 5 or maybe we should not overwrite rating? We'll keep as 5 for simplicity.
       description: description,
       manufacturer: manufacturer,
       categoryId: categoryId,
       inStock: inStock,
+      netType: netType,
+      meshSize: meshSize,
+      netLength: netLength,
+      netHeight: netHeight,
+      material: material,
+      color: color,
+      threadDiameter: threadDiameter,
+      breakingStrength: breakingStrength,
+      usage: usage,
+      targetFishOrSpecies: targetFishOrSpecies,
+      waterType: waterType,
+      countryOfOrigin: countryOfOrigin,
+      weight: weight,
+      customizationAvailability: customizationAvailability,
+      shippingInformation: shippingInformation,
     },
   });
 
@@ -381,12 +490,40 @@ const updateProduct = asyncHandler(async (request, response) => {
 const deleteProduct = asyncHandler(async (request, response) => {
   const { id } = request.params;
 
+  // Get authenticated user
+  const userId = request.user.id;
+
+  // Find merchant for this user
+  const merchant = await prisma.merchant.findUnique({
+    where: { userId },
+  });
+
+  if (!merchant) {
+    throw new AppError("Merchant profile not found", 403);
+  }
+
   if (!id) {
     throw new AppError("Product ID is required", 400);
   }
 
-  // Check for related records in order_product table
-  const relatedOrderProductItems = await prisma.customer_order_product.findMany({
+  // Finding a product by id
+  const existingProduct = await prisma.product.findUnique({
+    where: {
+      id,
+    },
+  });
+
+  if (!existingProduct) {
+    throw new AppError("Product not found", 404);
+  }
+
+  // Authorization: check if product belongs to user's merchant or user is admin
+  if (existingProduct.merchantId !== merchant.id && request.user.role !== "ADMIN") {
+    throw new AppError("Unauthorized to delete this product", 403);
+  }
+
+  // Check for related records in current order items table.
+  const relatedOrderProductItems = await prisma.orderItem.findMany({
     where: {
       productId: id,
     },
@@ -425,6 +562,16 @@ const searchProducts = asyncHandler(async (request, response) => {
             contains: query,
           },
         },
+        {
+          netType: {
+            contains: query,
+          },
+        },
+        {
+          material: {
+            contains: query,
+          },
+        }
       ],
     },
   });
@@ -445,6 +592,11 @@ const getProductById = asyncHandler(async (request, response) => {
     },
     include: {
       category: true,
+      merchant: {
+        select: {
+          name: true,
+        },
+      },
     },
   });
 

@@ -52,7 +52,7 @@ class MigrationValidator {
             backupSQL += `-- WARNING: This is a basic backup. Use mysqldump for production!\n\n`;
 
             // Backup each table using Prisma models
-            const tables = ['user', 'product', 'category', 'customer_order', 'customer_order_product', 'wishlist'];
+            const tables = ['user', 'product', 'category', 'marketplaceOrder', 'orderItem', 'wishlist'];
             
             for (const table of tables) {
                 try {
@@ -88,10 +88,10 @@ class MigrationValidator {
                     return await this.prisma.product.findMany();
                 case 'category':
                     return await this.prisma.category.findMany();
-                case 'customer_order':
-                    return await this.prisma.customer_order.findMany();
-                case 'customer_order_product':
-                    return await this.prisma.customer_order_product.findMany();
+                case 'marketplaceOrder':
+                    return await this.prisma.marketplaceOrder.findMany();
+                case 'orderItem':
+                    return await this.prisma.orderItem.findMany();
                 case 'wishlist':
                     return await this.prisma.wishlist.findMany();
                 default:

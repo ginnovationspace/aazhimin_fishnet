@@ -1,131 +1,204 @@
+"use client";
+
 // *********************
 // Role of the component: Product table component on admin dashboard page
 // Name of the component: DashboardProductTable.tsx
-// Developer: Aleksandar Kuzmanovic
-// Version: 1.0
-// Component call: <DashboardProductTable />
-// Input parameters: no input parameters
-// Output: products table
 // *********************
 
-"use client";
-import { nanoid } from "nanoid";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
-import CustomButton from "./CustomButton";
 import apiClient from "@/lib/api";
 import { sanitize } from "@/lib/sanitize";
 
+interface Product {
+  id: string;
+  title: string;
+  manufacturer?: string | null;
+  mainImage?: string | null;
+  inStock: boolean;
+  price: number;
+}
+
 const DashboardProductTable = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    apiClient.get("/api/products?mode=admin", {cache: "no-store"})
-      .then((res) => {
-        return res.json();
-      })
-      .then((data) => {
-        setProducts(data);
-      });
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await apiClient.get(
+          "/api/products?mode=admin",
+          { cache: "no-store" }
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch products: ${response.status} ${response.statusText}`
+          );
+        }
+
+        const data = await response.json();
+
+        // Support both:
+        // [products]
+        // { products: [...] }
+        const productList = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.products)
+            ? data.products
+            : [];
+
+        setProducts(productList);
+      } catch (err) {
+        console.error("Failed to fetch admin products:", err);
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load products"
+        );
+
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
   }, []);
 
   return (
     <div className="w-full">
-      <h1 className="text-3xl font-semibold text-center mb-5">All products</h1>
-      <div className="flex justify-end mb-5">
-        <Link href="/admin/products/new">
-          <CustomButton
-            buttonType="button"
-            customWidth="110px"
-            paddingX={10}
-            paddingY={5}
-            textSize="base"
-            text="Add new product"
-          />
-        </Link>
-      </div>
+      <h2 className="mb-5 text-xl font-semibold text-gray-900">
+        All Products
+      </h2>
 
-      <div className="xl:ml-5 w-full max-xl:mt-5 overflow-auto w-full h-[80vh]">
-        <table className="table table-md table-pin-cols">
-          {/* head */}
-          <thead>
-            <tr>
-              <th>
-                <label>
-                  <input type="checkbox" className="checkbox" />
-                </label>
-              </th>
-              <th>Product</th>
-              <th>Stock Availability</th>
-              <th>Price</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* row 1 */}
-            {products &&
-              products.map((product) => (
-                <tr key={nanoid()}>
+      <div className="xl:ml-5 max-xl:mt-5 w-full h-[80vh] overflow-auto">
+        {loading ? (
+          <div className="flex min-h-40 items-center justify-center">
+            <span className="loading loading-spinner loading-md" />
+          </div>
+        ) : error ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {error}
+          </div>
+        ) : products.length === 0 ? (
+          <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500">
+            No products found.
+          </div>
+        ) : (
+          <table className="table table-md table-pin-cols">
+            <thead>
+              <tr>
+                <th>
+                  <label>
+                    <input
+                      type="checkbox"
+                      className="checkbox"
+                      aria-label="Select all products"
+                    />
+                  </label>
+                </th>
+
+                <th>Product</th>
+                <th>Stock Availability</th>
+                <th>Price</th>
+                <th />
+              </tr>
+            </thead>
+
+            <tbody>
+              {products.map((product) => (
+                <tr key={product.id}>
                   <th>
                     <label>
-                      <input type="checkbox" className="checkbox" />
+                      <input
+                        type="checkbox"
+                        className="checkbox"
+                        aria-label={`Select ${sanitize(product.title)}`}
+                      />
                     </label>
                   </th>
 
                   <td>
                     <div className="flex items-center gap-3">
                       <div className="avatar">
-                        <div className="mask mask-squircle w-12 h-12">
+                        <div className="mask mask-squircle h-12 w-12">
                           <Image
                             width={48}
                             height={48}
-                            src={product?.mainImage ? `/${product?.mainImage}` : "/product_placeholder.jpg"}
-                            alt={sanitize(product?.title) || "Product image"}
-                            className="w-auto h-auto"
+                            src={
+                              product.mainImage
+                                ? `/${product.mainImage}`
+                                : "/product_placeholder.jpg"
+                            }
+                            alt={
+                              sanitize(product.title) ||
+                              "Product image"
+                            }
+                            className="h-12 w-12 object-cover"
                           />
                         </div>
                       </div>
+
                       <div>
-                        <div className="font-bold">{sanitize(product?.title)}</div>
-                        <div className="text-sm opacity-50">
-                          {sanitize(product?.manufacturer)}
+                        <div className="font-bold">
+                          {sanitize(product.title)}
                         </div>
+
+                        {product.manufacturer && (
+                          <div className="text-sm opacity-50">
+                            {sanitize(product.manufacturer)}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </td>
 
                   <td>
-                    { product?.inStock ? (<span className="badge badge-success text-white badge-sm">
-                      In stock
-                    </span>) : (<span className="badge badge-error text-white badge-sm">
-                      Out of stock
-                    </span>) }
-                    
+                    {product.inStock ? (
+                      <span className="badge badge-success badge-sm text-white">
+                        In stock
+                      </span>
+                    ) : (
+                      <span className="badge badge-error badge-sm text-white">
+                        Out of stock
+                      </span>
+                    )}
                   </td>
-                  <td>${product?.price}</td>
+
+                  <td>
+                    ₹{Number(product.price).toFixed(2)}
+                  </td>
+
                   <th>
                     <Link
                       href={`/admin/products/${product.id}`}
                       className="btn btn-ghost btn-xs"
                     >
-                      details
+                      Details
                     </Link>
                   </th>
                 </tr>
               ))}
-          </tbody>
-          {/* foot */}
-          <tfoot>
-            <tr>
-              <th></th>
-              <th>Product</th>
-              <th>Stock Availability</th>
-              <th>Price</th>
-              <th></th>
-            </tr>
-          </tfoot>
-        </table>
+            </tbody>
+
+            <tfoot>
+              <tr>
+                <th />
+                <th>Product</th>
+                <th>Stock Availability</th>
+                <th>Price</th>
+                <th />
+              </tr>
+            </tfoot>
+          </table>
+        )}
       </div>
     </div>
   );

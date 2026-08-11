@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// Prisma schema for Aazhimin Fishnet Marketplace
+// PostgreSQL / Neon
 
 generator client {
   provider = "prisma-client-js"
@@ -13,101 +10,69 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Product {
-  id             String                   @id @default(uuid())
-  slug           String                   @unique
-  title          String
-  mainImage      String
-  price          Int                      @default(0)
-  rating         Int                      @default(0)
-  description    String
-  manufacturer   String
-  inStock        Int                      @default(1)
-  categoryId     String
-  category       Category                 @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  customerOrders customer_order_product[]
-  Wishlist       Wishlist[]
-
-  merchantId     String
-  merchant       Merchant @relation(fields: [merchantId], references: [id])
-  // Back relation for bulk upload items
-  bulkUploadItems bulk_upload_item[]      @relation("ProductBulkItems")
-
-  // Fishnet-specific fields
-  netType        String?                  // GILL, CAST, DRAG, SEINE, NYLON, HDPE, POLYETHYLENE, MONOFILAMENT, MULTIFILAMENT, COMMERCIAL, AQUACULTURE, ACCESSORY
-  meshSize       String?                  // e.g., "10mm", "1/2 inch"
-  netLength      Float?                   // in meters
-  netHeight      Float?                   // in meters
-  material       String?                  // e.g., nylon, polyethylene
-  color          String?
-  threadDiameter Float?                   // in mm
-  breakingStrength Float?                 // in kg or lbs
-  usage          String?                  // e.g., fishing, aquaculture
-  targetFishOrSpecies String?           // target fish species
-  waterType      String?                  // FRESHWATER, SALTWATER, BOTH
-  countryOfOrigin String?
-  weight         Float?                   // in kg
-  customizationAvailability Boolean?    // whether the product can be customized
-  shippingInformation String?          // shipping details or restrictions
+enum VerificationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
 }
 
-model Image {
-  imageID   String @id @default(uuid())
-  productID String
-  image     String
+enum OrderStatus {
+  ORDER_PLACED
+  PAYMENT_CONFIRMED
+  PROCESSING
+  READY_TO_SHIP
+  SHIPPED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  REFUND_REQUESTED
+  REFUNDED
+  DISPUTED
 }
 
-model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  password      String?
-  role          String?        @default("user")
-  Wishlist      Wishlist[]
-  notifications Notification[]
-  // Back relation for bulk upload batches
-  bulkUploadBatches bulk_upload_batch[] @relation("UserBatches")
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
 }
 
-model Customer_order {
-  id          String                   @id @default(uuid())
-  name        String
-  lastname    String
-  phone       String
-  email       String
-  company     String
-  adress      String
-  apartment   String
-  postalCode  String
-  dateTime    DateTime?                @default(now())
-  status      String
-  city        String
-  country     String
-  orderNotice String?
-  total       Int
-  products    customer_order_product[]
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  ON_HOLD
+  CANCELLED
 }
 
-model customer_order_product {
-  id              String         @id @default(uuid())
-  customerOrder   Customer_order @relation(fields: [customerOrderId], references: [id])
-  customerOrderId String
-  product         Product        @relation(fields: [productId], references: [id])
-  productId       String
-  quantity        Int
+enum Role {
+  BUYER
+  SELLER
+  ADMIN
 }
 
-model Category {
-  id       String    @id @default(uuid())
-  name     String    @unique
-  products Product[] // Define a one-to-many relationship
+enum CommissionType {
+  FIXED
+  PERCENTAGE
 }
 
-model Wishlist {
-  id        String  @id @default(uuid())
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId String
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
+enum BulkUploadStatus {
+  PENDING
+  COMPLETED
+  PARTIAL
+  FAILED
+}
+
+enum BulkUploadItemStatus {
+  CREATED
+  UPDATED
+  ERROR
 }
 
 enum NotificationType {
@@ -124,10 +89,469 @@ enum NotificationPriority {
   URGENT
 }
 
+model User {
+  id       String  @id @default(uuid())
+  email    String  @unique
+  password String?
+  role     Role    @default(BUYER)
+
+  merchant Merchant? @relation("UserMerchant")
+
+  cart              Cart?
+  wishlist          Wishlist[]
+  notifications     Notification[]
+  bulkUploadBatches bulk_upload_batch[] @relation("UserBatches")
+  reviews           Review[]
+  addresses         Address[]
+  marketplaceOrders MarketplaceOrder[]
+  quotations        Quotation[]
+  disputes          Dispute[]
+}
+
+model Merchant {
+  id String @id @default(uuid())
+
+  userId String? @unique
+  user   User?   @relation("UserMerchant", fields: [userId], references: [id])
+
+  name        String
+  description String?
+  email       String?
+  phone       String?
+  address     String?
+  status      String  @default("ACTIVE")
+
+  verificationStatus      VerificationStatus @default(PENDING)
+  verificationSubmittedAt DateTime?
+  verificationReviewedAt  DateTime?
+  verificationNotes       String?
+  verificationDocuments   Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products     Product[]
+  sellerOrders SellerOrder[]
+  bankAccounts SellerBankAccount[]
+  payouts      Payout[]
+  addresses    Address[]
+  quotations   Quotation[]
+  disputes     Dispute[]
+}
+
+model SellerBankAccount {
+  id            String   @id @default(uuid())
+  merchant      Merchant @relation(fields: [merchantId], references: [id])
+  merchantId    String
+  accountName   String
+  accountNumber String
+  bankName      String
+  ifscCode      String?
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  payouts Payout[]
+}
+
+model Product {
+  id           String @id @default(uuid())
+  slug         String @unique
+  title        String
+  mainImage    String
+  price        Int    @default(0)
+  rating       Int    @default(0)
+  description  String
+  manufacturer String
+  inStock      Int    @default(1)
+
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId String
+
+  merchant   Merchant @relation(fields: [merchantId], references: [id])
+  merchantId String
+
+  netType                   String?
+  meshSize                  String?
+  netLength                 Float?
+  netHeight                 Float?
+  material                  String?
+  color                     String?
+  threadDiameter            Float?
+  breakingStrength          Float?
+  usage                     String?
+  targetFishOrSpecies       String?
+  waterType                 String?
+  countryOfOrigin           String?
+  weight                    Float?
+  customizationAvailability Boolean?
+  shippingInformation       String?
+
+  images          Image[]            @relation("ProductImages")
+  orderItems      OrderItem[]        @relation("OrderItems")
+  cartItems       CartItem[]
+  quotationItems  QuotationItem[]
+  reviews         Review[]
+  wishlists       Wishlist[]
+  bulkUploadItems bulk_upload_item[] @relation("ProductBulkItems")
+}
+
+model Image {
+  imageID   String @id @default(uuid())
+  productID String
+  image     String
+
+  product Product @relation("ProductImages", fields: [productID], references: [id], onDelete: Cascade)
+
+  @@index([productID])
+}
+
+model Category {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  products Product[]
+}
+
+model Cart {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  items     CartItem[] @relation("CartItems")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  productId String
+  quantity  Int
+  createdAt DateTime @default(now())
+
+  cart    Cart    @relation("CartItems", fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId])
+  @@index([productId])
+}
+
+model MarketplaceOrder {
+  id          String      @id @default(uuid())
+  userId      String
+  status      OrderStatus @default(ORDER_PLACED)
+  totalAmount Int
+
+  shippingAddress Json?
+  placedAt        DateTime @default(now())
+
+  buyerName       String?
+  buyerLastname   String?
+  buyerPhone      String?
+  buyerEmail      String?
+  buyerCompany    String?
+  buyerAddress    String?
+  buyerApartment  String?
+  buyerPostalCode String?
+  buyerCity       String?
+  buyerCountry    String?
+  orderNotice     String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  sellerOrders SellerOrder[] @relation("SellerOrders")
+  payments     Payment[]     @relation("OrderPayments")
+  refunds      Refund[]      @relation("OrderRefunds")
+  disputes     Dispute[]     @relation("OrderDisputes")
+  commissions  Commission[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([placedAt])
+}
+
+model SellerOrder {
+  id                 String @id @default(uuid())
+  marketplaceOrderId String
+  merchantId         String
+
+  status      OrderStatus @default(ORDER_PLACED)
+  totalAmount Int
+
+  marketplaceOrder MarketplaceOrder @relation("SellerOrders", fields: [marketplaceOrderId], references: [id], onDelete: Cascade)
+  merchant         Merchant         @relation(fields: [merchantId], references: [id])
+
+  orderItems OrderItem[] @relation("SellerOrderItems")
+  payout     Payout?
+  shipment   Shipment?
+
+  @@index([marketplaceOrderId])
+  @@index([merchantId])
+  @@index([status])
+}
+
+model OrderItem {
+  id            String @id @default(uuid())
+  sellerOrderId String
+  productId     String
+  quantity      Int
+  unitPrice     Int
+  totalPrice    Int
+
+  sellerOrder SellerOrder @relation("SellerOrderItems", fields: [sellerOrderId], references: [id], onDelete: Cascade)
+  product     Product     @relation("OrderItems", fields: [productId], references: [id])
+
+  reviews Review[] @relation("ItemReviews")
+
+  @@index([sellerOrderId])
+  @@index([productId])
+}
+
+model Address {
+  id         String  @id @default(uuid())
+  userId     String?
+  merchantId String?
+
+  type          String
+  name          String
+  streetAddress String
+  apartment     String?
+  city          String
+  postalCode    String
+  country       String
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user     User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  merchant Merchant? @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([merchantId])
+}
+
+model Payment {
+  id                 String        @id @default(uuid())
+  marketplaceOrderId String
+  amount             Int
+  status             PaymentStatus @default(PENDING)
+  method             String
+  transactionId      String?
+  gatewayResponse    Json?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  marketplaceOrder MarketplaceOrder @relation("OrderPayments", fields: [marketplaceOrderId], references: [id], onDelete: Cascade)
+  refunds          Refund[]         @relation("PaymentRefunds")
+
+  @@index([marketplaceOrderId])
+  @@index([status])
+  @@index([transactionId])
+}
+
+model Refund {
+  id                 String        @id @default(uuid())
+  paymentId          String
+  marketplaceOrderId String
+  amount             Int
+  reason             String
+  status             PaymentStatus @default(PENDING)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  payment          Payment          @relation("PaymentRefunds", fields: [paymentId], references: [id], onDelete: Cascade)
+  marketplaceOrder MarketplaceOrder @relation("OrderRefunds", fields: [marketplaceOrderId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([marketplaceOrderId])
+}
+
+model Payout {
+  id            String  @id @default(uuid())
+  sellerOrderId String  @unique
+  merchantId    String
+  bankAccountId String?
+
+  amount    Int
+  status    PayoutStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  sellerOrder SellerOrder        @relation(fields: [sellerOrderId], references: [id], onDelete: Cascade)
+  merchant    Merchant           @relation(fields: [merchantId], references: [id])
+  bankAccount SellerBankAccount? @relation(fields: [bankAccountId], references: [id])
+
+  @@index([sellerOrderId])
+  @@index([merchantId])
+  @@index([bankAccountId])
+  @@index([status])
+}
+
+model Commission {
+  id                 String         @id @default(uuid())
+  marketplaceOrderId String
+  amount             Int
+  type               CommissionType @default(PERCENTAGE)
+  rate               Float
+  createdAt          DateTime       @default(now())
+
+  marketplaceOrder MarketplaceOrder @relation(fields: [marketplaceOrderId], references: [id], onDelete: Cascade)
+
+  @@index([marketplaceOrderId])
+}
+
+model Quotation {
+  id         String   @id @default(uuid())
+  buyerId    String
+  merchantId String
+  status     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  buyer    User            @relation(fields: [buyerId], references: [id])
+  merchant Merchant        @relation(fields: [merchantId], references: [id])
+  items    QuotationItem[] @relation("QuotationItems")
+
+  @@index([buyerId])
+  @@index([merchantId])
+  @@index([status])
+}
+
+model QuotationItem {
+  id                   String @id @default(uuid())
+  quotationId          String
+  productId            String
+  quantity             Int
+  unitPrice            Int
+  totalPrice           Int
+  customSpecifications Json?
+
+  quotation Quotation @relation("QuotationItems", fields: [quotationId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id])
+
+  @@index([quotationId])
+  @@index([productId])
+}
+
+model Dispute {
+  id                 String   @id @default(uuid())
+  marketplaceOrderId String
+  buyerId            String
+  merchantId         String
+  reason             String
+  description        String?
+  status             String
+  resolution         String?
+  resolutionDetails  Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  marketplaceOrder MarketplaceOrder @relation("OrderDisputes", fields: [marketplaceOrderId], references: [id], onDelete: Cascade)
+  buyer            User             @relation(fields: [buyerId], references: [id])
+  seller           Merchant         @relation(fields: [merchantId], references: [id])
+
+  @@index([marketplaceOrderId])
+  @@index([buyerId])
+  @@index([merchantId])
+  @@index([status])
+}
+
+model Review {
+  id                  String   @id @default(uuid())
+  orderItemId         String
+  buyerId             String
+  productId           String
+  productQuality      Int
+  accuracy            Int
+  sellerCommunication Int
+  delivery            Int
+  overallExperience   Int
+  comment             String?
+  createdAt           DateTime @default(now())
+
+  orderItem OrderItem @relation("ItemReviews", fields: [orderItemId], references: [id], onDelete: Cascade)
+  buyer     User      @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([orderItemId, buyerId])
+  @@index([productId])
+  @@index([buyerId])
+}
+
+model Shipment {
+  id             String    @id @default(uuid())
+  sellerOrderId  String    @unique
+  trackingNumber String
+  carrier        String
+  shippedAt      DateTime?
+  deliveredAt    DateTime?
+  status         String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  sellerOrder SellerOrder        @relation(fields: [sellerOrderId], references: [id], onDelete: Cascade)
+  tracking    ShipmentTracking[]
+
+  @@index([trackingNumber])
+  @@index([status])
+}
+
+model ShipmentTracking {
+  id          String   @id @default(uuid())
+  shipmentId  String
+  location    String
+  status      String
+  timestamp   DateTime @default(now())
+  description String?
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId])
+  @@index([timestamp])
+}
+
+model bulk_upload_batch {
+  id         String           @id @default(uuid())
+  fileName   String?
+  createdAt  DateTime         @default(now())
+  status     BulkUploadStatus @default(PENDING)
+  itemCount  Int              @default(0)
+  errorCount Int              @default(0)
+  userId     String?
+
+  items bulk_upload_item[]
+  user  User?              @relation("UserBatches", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+}
+
+model bulk_upload_item {
+  id           String               @id @default(uuid())
+  batchId      String
+  productId    String?
+  title        String
+  slug         String
+  price        Int
+  manufacturer String?
+  description  String?
+  mainImage    String?
+  inStock      Int
+  categoryId   String
+  status       BulkUploadItemStatus @default(CREATED)
+  error        String?
+
+  batch   bulk_upload_batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  product Product?          @relation("ProductBulkItems", fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([batchId])
+  @@index([productId])
+  @@index([categoryId])
+}
+
 model Notification {
   id        String               @id @default(uuid())
   userId    String
-  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
   message   String               @db.Text
   type      NotificationType
@@ -137,73 +561,22 @@ model Notification {
   createdAt DateTime             @default(now())
   updatedAt DateTime             @updatedAt
 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([userId, isRead])
   @@index([userId, type])
   @@index([createdAt])
 }
 
-model Merchant {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  email       String?
-  phone       String?
-  address     String?
-  status      String   @default("ACTIVE")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model Wishlist {
+  id        String @id @default(uuid())
+  productId String
+  userId    String
 
-  // relasi
-  products Product[]
-}
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-model bulk_upload_batch {
-  id         String              @id @default(uuid())
-  fileName   String?
-  createdAt  DateTime            @default(now())
-  status     BulkUploadStatus    @default(PENDING)
-  itemCount  Int                 @default(0)
-  errorCount Int                 @default(0)
-  items      bulk_upload_item[]
-
-  // optional uploader link if you later associate sessions/users
-  userId String?
-  user   User?                  @relation(name: "UserBatches", fields: [userId], references: [id])
-}
-
-model bulk_upload_item {
-  id        String            @id @default(uuid())
-  batchId   String
-  batch     bulk_upload_batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
-
-  // created product reference
-  productId String?
-  product   Product?          @relation(name: "ProductBulkItems", fields: [productId], references: [id], onDelete: SetNull)
-
-  // snapshot fields for auditing and re-commit edits
-  title         String
-  slug          String
-  price         Int
-  manufacturer  String?
-  description   String?
-  mainImage     String?
-  categoryId    String
-  inStock       Int
-
-  status        BulkUploadItemStatus @default(CREATED)
-  error         String?
-}
-
-enum BulkUploadStatus {
-  PENDING
-  COMPLETED
-  PARTIAL
-  FAILED
-}
-
-enum BulkUploadItemStatus {
-  CREATED
-  UPDATED
-  ERROR
+  @@unique([userId, productId])
+  @@index([productId])
 }

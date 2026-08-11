@@ -1,52 +1,35 @@
-// *********************
-// Role of the component: Enhanced search input with better UX and styling
-// Name of the component: SearchInput.tsx
-// Developer: Enhanced by Claude
-// Version: 2.0
-// Component call: <SearchInput />
-// Input parameters: no input parameters
-// Output: Improved search form with better visual feedback and accessibility
-// *********************
-
 "use client";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
+import apiClient from "@/lib/api";
 import { sanitize } from "@/lib/sanitize";
-import { useSearchStore } from "@/app/_zustand/searchStore"; // Assuming this exists for suggestions
 
 const SearchInput = () => {
   const [searchInput, setSearchInput] = useState<string>("");
   const [isFocused, setIsFocused] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const router = useRouter();
 
-  // Function to fetch search suggestions (simplified - would normally call API)
+  // Function to fetch search suggestions from API
   useEffect(() => {
     if (searchInput.length >= 2) {
-      // In a real app, this would call an API for suggestions
-      // For now, we'll use some sample fishing-related suggestions
-      const sampleSuggestions = [
-        "fishing net",
-        "fishing rod",
-        "spinning reel",
-        "fish finder",
-        "tackle box",
-        "bait and lures",
-        "fishing line",
-        "fish hooks",
-        "waders",
-        "fishing vest"
-      ];
-
-      const filtered = sampleSuggestions
-        .filter(suggestion =>
-          suggestion.toLowerCase().includes(searchInput.toLowerCase())
-        )
-        .slice(0, 5); // Limit to 5 suggestions
-
-      setSuggestions(filtered);
+      setLoadingSuggestions(true);
+      // Fetch suggestions from API
+      apiClient.get(`/api/search/suggest?query=${encodeURIComponent(searchInput)}`)
+        .then(response => response.json())
+        .then(data => {
+          setSuggestions(data.suggestions || []);
+          setLoadingSuggestions(false);
+        })
+        .catch(error => {
+          console.error('Error fetching search suggestions:', error);
+          setSuggestions([]);
+          setLoadingSuggestions(false);
+        });
     } else {
       setSuggestions([]);
+      setLoadingSuggestions(false);
     }
   }, [searchInput]);
 
@@ -66,6 +49,7 @@ const SearchInput = () => {
   const handleSelectSuggestion = (suggestion: string) => {
     setSearchInput(suggestion);
     setSuggestions([]);
+    // Submit the search when a suggestion is selected
     searchProducts(new FormEvent(new FormData()));
   };
 
@@ -76,7 +60,7 @@ const SearchInput = () => {
           htmlFor="search-input"
           className="sr-only"
         >
-          Search products
+          Search fishnets
         </label>
         <form className="flex w-full" onSubmit={searchProducts}>
           <input
@@ -86,7 +70,7 @@ const SearchInput = () => {
             onChange={(e) => setSearchInput(e.target.value)}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder="Search for fishing nets, rods, reels, and more..."
+            placeholder="Search fishnets, mesh sizes, materials..."
             className={`flex-1 min-w-0 border-b-2 border-gray-300 focus:border-blue-500 focus:outline-none focus:ring-0 px-4 py-3 text-sm ${isFocused ? "focus:border-blue-500" : ""} transition-all duration-200`}
           />
           <button
@@ -101,18 +85,32 @@ const SearchInput = () => {
         </form>
 
         {/* Search Suggestions Dropdown */}
-        {isFocused && suggestions.length > 0 && (
+        {isFocused && (suggestions.length > 0 || loadingSuggestions) && (
           <div className="absolute left-0 right-0 mt-1 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 overflow-hidden z-20">
             <div className="py-1">
-              {suggestions.map((suggestion, index) => (
-                <div
-                  key={index}
-                  onClick={() => handleSelectSuggestion(suggestion)}
-                  className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                >
-                  {suggestion}
+              {loadingSuggestions ? (
+                <div className="flex flex-col items-center py-2">
+                  <div className="h-3 w-3 animate-spin border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                  <span className="mt-1 text-sm text-gray-500">Searching...</span>
                 </div>
-              ))}
+              ) : (
+                <div>
+                  {suggestions.map((suggestion, index) => (
+                    <div
+                      key={index}
+                      onClick={() => handleSelectSuggestion(suggestion)}
+                      className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                    >
+                      {suggestion}
+                    </div>
+                  ))}
+                  {suggestions.length === 0 && (
+                    <div className="px-4 py-2 text-sm text-gray-500">
+                      No suggestions found
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -6,6 +6,7 @@ const prismaClientSingleton = () => {
 };
 const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
 exports.default = prisma;
+module.exports = prisma;
 if (process.env.NODE_ENV !== 'production') {
     // @ts-ignore
     globalThis.prismaGlobal = prisma;

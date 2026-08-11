@@ -1,16 +1,51 @@
 "use client";
-import { SectionTitle } from "@/components";
+
 import { useProductStore } from "../_zustand/store";
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useEffect, useRef, useState } from "react";
+import { useSession } from "@/lib/auth-client";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import apiClient from "@/lib/api";
+import { loadStripe, type Stripe } from "@stripe/stripe-js";
+
+type CheckoutProduct = {
+  id: string;
+  title: string;
+  price: number | string;
+  amount: number;
+  mainImage?: string | null;
+};
+
+type CheckoutForm = {
+  name: string;
+  lastname: string;
+  phone: string;
+  email: string;
+  company: string;
+  adress: string;
+  apartment: string;
+  city: string;
+  country: string;
+  postalCode: string;
+  orderNotice: string;
+  paymentMethod: string;
+};
+
+type PaymentIntentResponse = {
+  clientSecret?: string;
+  error?: string;
+  message?: string;
+};
+
+const SHIPPING_COST = 5;
+const TAX_RATE = 0.2;
 
 const CheckoutPage = () => {
   const { data: session } = useSession();
-  const [checkoutForm, setCheckoutForm] = useState({
+  const router = useRouter();
+
+  const [checkoutForm, setCheckoutForm] = useState<CheckoutForm>({
     name: "",
     lastname: "",
     phone: "",
@@ -22,410 +57,417 @@ const CheckoutPage = () => {
     country: "",
     postalCode: "",
     orderNotice: "",
+    paymentMethod: "card",
   });
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { products, total, clearCart } = useProductStore();
-  const router = useRouter();
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
-  // Add validation functions that match server requirements
-  const validateForm = () => {
-    const errors: string[] = [];
-    
-    // Name validation
-    if (!checkoutForm.name.trim() || checkoutForm.name.trim().length < 2) {
-      errors.push("Name must be at least 2 characters");
-    }
-    
-    // Lastname validation
-    if (!checkoutForm.lastname.trim() || checkoutForm.lastname.trim().length < 2) {
-      errors.push("Lastname must be at least 2 characters");
-    }
-    
-    // Email validation
-    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-    if (!checkoutForm.email.trim() || !emailRegex.test(checkoutForm.email.trim())) {
-      errors.push("Please enter a valid email address");
-    }
-    
-    // Phone validation (must be at least 10 digits)
-    const phoneDigits = checkoutForm.phone.replace(/[^0-9]/g, '');
-    if (!checkoutForm.phone.trim() || phoneDigits.length < 10) {
-      errors.push("Phone number must be at least 10 digits");
-    }
-    
-    // Company validation
-    if (!checkoutForm.company.trim() || checkoutForm.company.trim().length < 5) {
-      errors.push("Company must be at least 5 characters");
-    }
-    
-    // Address validation
-    if (!checkoutForm.adress.trim() || checkoutForm.adress.trim().length < 5) {
-      errors.push("Address must be at least 5 characters");
-    }
-    
-    // Apartment validation (updated to 1 character minimum)
-    if (!checkoutForm.apartment.trim() || checkoutForm.apartment.trim().length < 1) {
-      errors.push("Apartment is required");
-    }
-    
-    // City validation
-    if (!checkoutForm.city.trim() || checkoutForm.city.trim().length < 5) {
-      errors.push("City must be at least 5 characters");
-    }
-    
-    // Country validation
-    if (!checkoutForm.country.trim() || checkoutForm.country.trim().length < 5) {
-      errors.push("Country must be at least 5 characters");
-    }
-    
-    // Postal code validation
-    if (!checkoutForm.postalCode.trim() || checkoutForm.postalCode.trim().length < 3) {
-      errors.push("Postal code must be at least 3 characters");
-    }
-    
-    return errors;
-  };
+  const { products, clearCart } = useProductStore();
 
-  const makePurchase = async () => {
-    // Client-side validation first
-    const validationErrors = validateForm();
-    if (validationErrors.length > 0) {
-      validationErrors.forEach(error => {
-        toast.error(error);
-      });
+  /**
+   * The existing Zustand ProductInCart type does not currently
+   * expose mainImage, but products returned from the application
+   * can contain it.
+   */
+  const checkoutProducts =
+    products as unknown as CheckoutProduct[];
+
+  /**
+   * Cart subtotal.
+   */
+  const subtotal = checkoutProducts.reduce(
+    (sum, product) =>
+      sum +
+      Number(product.price) * Number(product.amount),
+    0
+  );
+
+  /**
+   * Tax.
+   */
+  const tax = subtotal * TAX_RATE;
+
+  /**
+   * Final checkout amount.
+   */
+  const total =
+    subtotal + tax + SHIPPING_COST;
+
+  /**
+   * Stripe instance.
+   */
+  const stripePromise = useRef<Promise<Stripe | null> | null>(
+    null
+  );
+
+  /**
+   * Initialize Stripe on the client.
+   */
+  useEffect(() => {
+    const publishableKey =
+      process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+
+    if (!publishableKey) {
+      console.warn(
+        "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not configured"
+      );
       return;
     }
 
-    // Basic client-side checks for required fields (UX only)
-    const requiredFields = [
-      'name', 'lastname', 'phone', 'email', 'company', 
-      'adress', 'apartment', 'city', 'country', 'postalCode'
-    ];
-    
-    const missingFields = requiredFields.filter(field => 
-      !checkoutForm[field as keyof typeof checkoutForm]?.trim()
-    );
+    stripePromise.current =
+      loadStripe(publishableKey);
+  }, []);
 
-    if (missingFields.length > 0) {
-      toast.error("Please fill in all required fields");
+  /**
+   * Populate checkout email from the authenticated session.
+   *
+   * Capture the email first so TypeScript knows that it exists.
+   */
+  useEffect(() => {
+    const email = session?.user?.email;
+
+    if (!email) {
       return;
     }
 
-    if (products.length === 0) {
+    setCheckoutForm((previous) => ({
+      ...previous,
+      email,
+    }));
+  }, [session?.user?.email]);
+
+  /**
+   * Initialize Stripe PaymentIntent.
+   */
+  const initializePayment = async () => {
+    if (checkoutProducts.length === 0) {
       toast.error("Your cart is empty");
-      return;
+      return null;
     }
-
-    if (total <= 0) {
-      toast.error("Invalid order total");
-      return;
-    }
-
-    setIsSubmitting(true);
 
     try {
-      console.log("🚀 Starting order creation...");
-      
-      // Get user ID if logged in
-      let userId = null;
-      if (session?.user?.email) {
-        try {
-          console.log("🔍 Getting user ID for logged-in user:", session.user.email);
-          const userResponse = await apiClient.get(`/api/users/email/${session.user.email}`);
-          if (userResponse.ok) {
-            const userData = await userResponse.json();
-            userId = userData.id;
-            console.log("✅ Found user ID:", userId);
-          } else {
-            console.log("❌ Could not find user with email:", session.user.email);
-          }
-        } catch (userError) {
-          console.log("⚠️  Error getting user ID:", userError);
+      setPaymentError(null);
+      setPaymentProcessing(true);
+
+      const response = await apiClient.post(
+        "/api/payment/create-payment-intent",
+        {
+          amount: Math.round(total * 100),
+          currency: "usd",
+          metadata: {
+            email: checkoutForm.email,
+          },
         }
+      );
+
+      const data =
+        (await response
+          .json()
+          .catch(() => null)) as PaymentIntentResponse | null;
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error ||
+            data?.message ||
+            "Unable to initialize payment"
+        );
       }
-      
-      // Prepare the order data
+
+      if (!data?.clientSecret) {
+        throw new Error(
+          "Payment client secret was not returned"
+        );
+      }
+
+      setClientSecret(data.clientSecret);
+
+      return data.clientSecret;
+    } catch (error) {
+      console.error(
+        "Payment initialization error:",
+        error
+      );
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to initialize payment";
+
+      setPaymentError(message);
+      toast.error(message);
+
+      return null;
+    } finally {
+      setPaymentProcessing(false);
+    }
+  };
+
+  /**
+   * Validate checkout fields.
+   */
+  const validateCheckoutForm = (): boolean => {
+    const requiredFields: Array<
+      [string, string]
+    > = [
+      ["Name", checkoutForm.name],
+      ["Lastname", checkoutForm.lastname],
+      ["Phone", checkoutForm.phone],
+      ["Email", checkoutForm.email],
+      ["Address", checkoutForm.adress],
+      ["City", checkoutForm.city],
+      ["Country", checkoutForm.country],
+      ["Postal Code", checkoutForm.postalCode],
+    ];
+
+    for (const [label, value] of requiredFields) {
+      if (!value.trim()) {
+        toast.error(`${label} is required`);
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  /**
+   * Create the order.
+   */
+  const createOrder = async (): Promise<boolean> => {
+    if (!validateCheckoutForm()) {
+      return false;
+    }
+
+    if (checkoutProducts.length === 0) {
+      toast.error("Your cart is empty");
+      return false;
+    }
+
+    try {
+      setIsSubmitting(true);
+
       const orderData = {
-        name: checkoutForm.name.trim(),
-        lastname: checkoutForm.lastname.trim(),
-        phone: checkoutForm.phone.trim(),
-        email: checkoutForm.email.trim().toLowerCase(),
-        company: checkoutForm.company.trim(),
-        adress: checkoutForm.adress.trim(),
-        apartment: checkoutForm.apartment.trim(),
-        postalCode: checkoutForm.postalCode.trim(),
-        status: "pending",
-        total: total,
-        city: checkoutForm.city.trim(),
-        country: checkoutForm.country.trim(),
-        orderNotice: checkoutForm.orderNotice.trim(),
-        userId: userId // Add user ID for notifications
+        ...checkoutForm,
+        total,
+        subtotal,
+        tax,
+        shipping: SHIPPING_COST,
+        products: checkoutProducts.map(
+          (product) => ({
+            productId: product.id,
+            quantity: product.amount,
+            price: Number(product.price),
+          })
+        ),
       };
 
-      console.log("📋 Order data being sent:", orderData);
+      const response = await apiClient.post(
+        "/api/orders",
+        orderData
+      );
 
-      // Send order data to server for validation and processing
-      const response = await apiClient.post("/api/orders", orderData);
+      const data =
+        await response.json().catch(() => null);
 
-      console.log("📡 API Response received:");
-      console.log("  Status:", response.status);
-      console.log("  Status Text:", response.statusText);
-      console.log("  Response OK:", response.ok);
-      
-      // Check if response is ok before parsing
       if (!response.ok) {
-        console.error("❌ Response not OK:", response.status, response.statusText);
-        const errorText = await response.text();
-        console.error("Error response body:", errorText);
-        
-        // Try to parse as JSON to get detailed error info
-        try {
-          const errorData = JSON.parse(errorText);
-          console.error("Parsed error data:", errorData);
-          
-          // Handle different error types
-          if (response.status === 409) {
-            // Duplicate order error
-            toast.error(errorData.details || errorData.error || "Duplicate order detected");
-            return; // Don't throw, just return to stop execution
-          } else if (errorData.details && Array.isArray(errorData.details)) {
-            // Validation errors
-            errorData.details.forEach((detail: any) => {
-              toast.error(`${detail.field}: ${detail.message}`);
-            });
-          } else if (typeof errorData.details === 'string') {
-            // Single error message in details
-            toast.error(errorData.details);
-          } else {
-            // Fallback error message
-            toast.error(errorData.error || "Order creation failed");
-          }
-        } catch (parseError) {
-          console.error("Could not parse error as JSON:", parseError);
-          toast.error("Order creation failed. Please try again.");
-        }
-        
-        return; // Stop execution instead of throwing
+        throw new Error(
+          data?.error ||
+            data?.message ||
+            "Unable to create order"
+        );
       }
 
-      const data = await response.json();
-      console.log("✅ Parsed response data:", data);
-      
-      const orderId: string = data.id;
-      console.log("🆔 Extracted order ID:", orderId);
+      return true;
+    } catch (error) {
+      console.error(
+        "Order creation error:",
+        error
+      );
 
-      if (!orderId) {
-        console.error("❌ Order ID is missing or falsy!");
-        console.error("Full response data:", JSON.stringify(data, null, 2));
-        throw new Error("Order ID not received from server");
-      }
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to create order";
 
-      console.log("✅ Order ID validation passed, proceeding with product addition...");
+      toast.error(message);
 
-      // Add products to order
-      for (let i = 0; i < products.length; i++) {
-        console.log(`🛍️ Adding product ${i + 1}/${products.length}:`, {
-          orderId,
-          productId: products[i].id,
-          quantity: products[i].amount
-        });
-        
-        await addOrderProduct(orderId, products[i].id, products[i].amount);
-        console.log(`✅ Product ${i + 1} added successfully`);
-      }
-
-      console.log(" All products added successfully!");
-
-      // Clear form and cart
-      setCheckoutForm({
-        name: "",
-        lastname: "",
-        phone: "",
-        email: "",
-        company: "",
-        adress: "",
-        apartment: "",
-        city: "",
-        country: "",
-        postalCode: "",
-        orderNotice: "",
-      });
-      clearCart();
-      
-      // Refresh notification count if user is logged in
-      try {
-        // This will trigger a refresh of notifications in the background
-        window.dispatchEvent(new CustomEvent('orderCompleted'));
-      } catch (error) {
-        console.log('Note: Could not trigger notification refresh');
-      }
-      
-      toast.success("Order created successfully! You will be contacted for payment.");
-      setTimeout(() => {
-        router.push("/");
-      }, 1000);
-    } catch (error: any) {
-      console.error("💥 Error in makePurchase:", error);
-      
-      // Handle server validation errors
-      if (error.response?.status === 400) {
-        console.log(" Handling 400 error...");
-        try {
-          const errorData = await error.response.json();
-          console.log("Error data:", errorData);
-          if (errorData.details && Array.isArray(errorData.details)) {
-            // Show specific validation errors
-            errorData.details.forEach((detail: any) => {
-              toast.error(`${detail.field}: ${detail.message}`);
-            });
-          } else {
-            toast.error(errorData.error || "Validation failed");
-          }
-        } catch (parseError) {
-          console.error("Failed to parse error response:", parseError);
-          toast.error("Validation failed");
-        }
-      } else if (error.response?.status === 409) {
-        toast.error("Duplicate order detected. Please wait before creating another order.");
-      } else {
-        console.log("🔍 Handling generic error...");
-        toast.error("Failed to create order. Please try again.");
-      }
+      return false;
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const addOrderProduct = async (
-    orderId: string,
-    productId: string,
-    productQuantity: number
-  ) => {
-    try {
-      console.log("️ Adding product to order:", {
-        customerOrderId: orderId,
-        productId,
-        quantity: productQuantity
-      });
-      
-      const response = await apiClient.post("/api/order-product", {
-        customerOrderId: orderId,
-        productId: productId,
-        quantity: productQuantity,
-      });
+  /**
+   * Reset checkout state and cart.
+   */
+  const clearFormAndCart = () => {
+    setCheckoutForm({
+      name: "",
+      lastname: "",
+      phone: "",
+      email: "",
+      company: "",
+      adress: "",
+      apartment: "",
+      city: "",
+      country: "",
+      postalCode: "",
+      orderNotice: "",
+      paymentMethod: "card",
+    });
 
-      console.log("📡 Product order response:", response);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ Product order failed:", response.status, errorText);
-        throw new Error(`Product order failed: ${response.status}`);
-      }
+    setClientSecret(null);
+    setPaymentError(null);
 
-      const data = await response.json();
-      console.log("✅ Product order successful:", data);
-      
-    } catch (error) {
-      console.error("💥 Error creating product order:", error);
-      throw error;
-    }
+    clearCart();
   };
 
-  useEffect(() => {
-    if (products.length === 0) {
-      toast.error("You don't have items in your cart");
-      router.push("/cart");
+  /**
+   * Main checkout handler.
+   */
+  const handleCheckout = async () => {
+    if (!validateCheckoutForm()) {
+      return;
     }
-  }, []);
+
+    if (checkoutProducts.length === 0) {
+      toast.error("Your cart is empty");
+      return;
+    }
+
+    /**
+     * Card payment.
+     */
+    if (checkoutForm.paymentMethod === "card") {
+      const secret =
+        clientSecret ||
+        (await initializePayment());
+
+      if (!secret) {
+        return;
+      }
+
+      try {
+        setPaymentProcessing(true);
+
+        const stripe =
+          await stripePromise.current;
+
+        if (!stripe) {
+          throw new Error(
+            "Stripe could not be initialized"
+          );
+        }
+
+        const result =
+          await stripe.confirmPayment({
+            clientSecret: secret,
+            redirect: "if_required",
+          });
+
+        if (result.error) {
+          throw new Error(
+            result.error.message ||
+              "Payment failed"
+          );
+        }
+
+        const paymentIntent =
+          result.paymentIntent;
+
+        if (
+          paymentIntent &&
+          paymentIntent.status !== "succeeded"
+        ) {
+          throw new Error(
+            `Payment was not completed. Status: ${paymentIntent.status}`
+          );
+        }
+
+        const orderCreated =
+          await createOrder();
+
+        if (!orderCreated) {
+          return;
+        }
+
+        toast.success(
+          "Payment and order completed successfully"
+        );
+
+        clearFormAndCart();
+
+        router.push("/order-success");
+      } catch (error) {
+        console.error(
+          "Checkout payment error:",
+          error
+        );
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Payment failed";
+
+        setPaymentError(message);
+        toast.error(message);
+      } finally {
+        setPaymentProcessing(false);
+      }
+
+      return;
+    }
+
+    /**
+     * Non-card payment methods.
+     *
+     * These currently create the order directly.
+     * The actual UPI/GPay payment integration should
+     * be implemented in the backend/payment provider
+     * before using these methods in production.
+     */
+    const orderCreated =
+      await createOrder();
+
+    if (!orderCreated) {
+      return;
+    }
+
+    toast.success("Order placed successfully");
+
+    clearFormAndCart();
+
+    router.push("/order-success");
+  };
 
   return (
-    <div className="bg-white">
-      <SectionTitle title="Checkout" path="Home | Cart | Checkout" />
-      
-      <div className="hidden h-full w-1/2 bg-white lg:block" aria-hidden="true" />
-      <div className="hidden h-full w-1/2 bg-gray-50 lg:block" aria-hidden="true" />
+    <div className="max-w-screen-2xl mx-auto px-5 py-10">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mt-10">
 
-      <main className="relative mx-auto grid max-w-screen-2xl grid-cols-1 gap-x-16 lg:grid-cols-2 lg:px-8 xl:gap-x-48">
-        <h1 className="sr-only">Order information</h1>
+        {/* Checkout form */}
+        <div className="lg:col-span-2">
+          <div className="flex flex-col gap-y-6">
 
-        {/* Order Summary */}
-        <section
-          aria-labelledby="summary-heading"
-          className="bg-gray-50 px-4 pb-10 pt-16 sm:px-6 lg:col-start-2 lg:row-start-1 lg:bg-transparent lg:px-0 lg:pb-16"
-        >
-          <div className="mx-auto max-w-lg lg:max-w-none">
-            <h2 id="summary-heading" className="text-lg font-medium text-gray-900">
-              Order summary
+            <h2 className="text-2xl font-semibold">
+              Billing details
             </h2>
 
-            <ul
-              role="list"
-              className="divide-y divide-gray-200 text-sm font-medium text-gray-900"
-            >
-              {products.map((product) => (
-                <li key={product?.id} className="flex items-start space-x-4 py-6">
-                  <Image
-                    src={product?.image ? `/${product?.image}` : "/product_placeholder.jpg"}
-                    alt={product?.title}
-                    width={80}
-                    height={80}
-                    className="h-20 w-20 flex-none rounded-md object-cover object-center"
-                  />
-                  <div className="flex-auto space-y-1">
-                    <h3>{product?.title}</h3>
-                    <p className="text-gray-500">x{product?.amount}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+              {/* First name */}
+              <div>
+                <label className="form-control w-full">
+                  <div className="label">
+                    <span className="label-text">
+                      First name
+                    </span>
                   </div>
-                  <p className="flex-none text-base font-medium">
-                    ${product?.price}
-                  </p>
-                </li>
-              ))}
-            </ul>
 
-            <dl className="hidden space-y-6 border-t border-gray-200 pt-6 text-sm font-medium text-gray-900 lg:block">
-              <div className="flex items-center justify-between">
-                <dt className="text-gray-600">Subtotal</dt>
-                <dd>${total}</dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt className="text-gray-600">Shipping</dt>
-                <dd>$5</dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt className="text-gray-600">Taxes</dt>
-                <dd>${total / 5}</dd>
-              </div>
-              <div className="flex items-center justify-between border-t border-gray-200 pt-6">
-                <dt className="text-base">Total</dt>
-                <dd className="text-base">
-                  ${total === 0 ? 0 : Math.round(total + total / 5 + 5)}
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </section>
-
-        <form className="px-4 pt-16 sm:px-6 lg:col-start-1 lg:row-start-1 lg:px-0">
-          <div className="mx-auto max-w-lg lg:max-w-none">
-            {/* Contact Information */}
-            <section aria-labelledby="contact-info-heading">
-              <h2
-                id="contact-info-heading"
-                className="text-lg font-medium text-gray-900"
-              >
-                Contact information
-              </h2>
-
-              <div className="mt-6">
-                <label
-                  htmlFor="name-input"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Name * (min 2 characters)
-                </label>
-                <div className="mt-1">
                   <input
+                    type="text"
+                    className="input input-bordered w-full"
                     value={checkoutForm.name}
                     onChange={(e) =>
                       setCheckoutForm({
@@ -433,26 +475,22 @@ const CheckoutPage = () => {
                         name: e.target.value,
                       })
                     }
-                    type="text"
-                    id="name-input"
-                    name="name-input"
-                    autoComplete="given-name"
-                    required
-                    disabled={isSubmitting}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
-                </div>
+                </label>
               </div>
 
-              <div className="mt-6">
-                <label
-                  htmlFor="lastname-input"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Lastname * (min 2 characters)
-                </label>
-                <div className="mt-1">
+              {/* Last name */}
+              <div>
+                <label className="form-control w-full">
+                  <div className="label">
+                    <span className="label-text">
+                      Last name
+                    </span>
+                  </div>
+
                   <input
+                    type="text"
+                    className="input input-bordered w-full"
                     value={checkoutForm.lastname}
                     onChange={(e) =>
                       setCheckoutForm({
@@ -460,26 +498,22 @@ const CheckoutPage = () => {
                         lastname: e.target.value,
                       })
                     }
-                    type="text"
-                    id="lastname-input"
-                    name="lastname-input"
-                    autoComplete="family-name"
-                    required
-                    disabled={isSubmitting}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
-                </div>
+                </label>
               </div>
 
-              <div className="mt-6">
-                <label
-                  htmlFor="phone-input"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Phone number * (min 10 digits)
-                </label>
-                <div className="mt-1">
+              {/* Phone */}
+              <div>
+                <label className="form-control w-full">
+                  <div className="label">
+                    <span className="label-text">
+                      Phone
+                    </span>
+                  </div>
+
                   <input
+                    type="tel"
+                    className="input input-bordered w-full"
                     value={checkoutForm.phone}
                     onChange={(e) =>
                       setCheckoutForm({
@@ -487,26 +521,22 @@ const CheckoutPage = () => {
                         phone: e.target.value,
                       })
                     }
-                    type="tel"
-                    id="phone-input"
-                    name="phone-input"
-                    autoComplete="tel"
-                    required
-                    disabled={isSubmitting}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
-                </div>
+                </label>
               </div>
 
-              <div className="mt-6">
-                <label
-                  htmlFor="email-address"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Email address *
-                </label>
-                <div className="mt-1">
+              {/* Email */}
+              <div>
+                <label className="form-control w-full">
+                  <div className="label">
+                    <span className="label-text">
+                      Email
+                    </span>
+                  </div>
+
                   <input
+                    type="email"
+                    className="input input-bordered w-full"
                     value={checkoutForm.email}
                     onChange={(e) =>
                       setCheckoutForm({
@@ -514,249 +544,375 @@ const CheckoutPage = () => {
                         email: e.target.value,
                       })
                     }
-                    type="email"
-                    id="email-address"
-                    name="email-address"
-                    autoComplete="email"
-                    required
-                    disabled={isSubmitting}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
-                </div>
+                </label>
               </div>
-            </section>
 
-            {/* Payment Notice */}
-            <section className="mt-10">
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
+              {/* Company */}
+              <div>
+                <label className="form-control w-full">
+                  <div className="label">
+                    <span className="label-text">
+                      Company
+                    </span>
                   </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-blue-800">
-                      Payment Information
-                    </h3>
-                    <div className="mt-2 text-sm text-blue-700">
-                      <p>Payment will be processed after order confirmation. You will be contacted for payment details.</p>
-                    </div>
-                  </div>
-                </div>
+
+                  <input
+                    type="text"
+                    className="input input-bordered w-full"
+                    value={checkoutForm.company}
+                    onChange={(e) =>
+                      setCheckoutForm({
+                        ...checkoutForm,
+                        company: e.target.value,
+                      })
+                    }
+                  />
+                </label>
               </div>
-            </section>
 
-            {/* Shipping Address */}
-            <section aria-labelledby="shipping-heading" className="mt-10">
-              <h2
-                id="shipping-heading"
-                className="text-lg font-medium text-gray-900"
-              >
-                Shipping address
+              {/* Address */}
+              <div>
+                <label className="form-control w-full">
+                  <div className="label">
+                    <span className="label-text">
+                      Address
+                    </span>
+                  </div>
+
+                  <input
+                    type="text"
+                    className="input input-bordered w-full"
+                    value={checkoutForm.adress}
+                    onChange={(e) =>
+                      setCheckoutForm({
+                        ...checkoutForm,
+                        adress: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+              </div>
+
+              {/* Apartment */}
+              <div>
+                <label className="form-control w-full">
+                  <div className="label">
+                    <span className="label-text">
+                      Apartment, suite, etc.
+                    </span>
+                  </div>
+
+                  <input
+                    type="text"
+                    className="input input-bordered w-full"
+                    value={checkoutForm.apartment}
+                    onChange={(e) =>
+                      setCheckoutForm({
+                        ...checkoutForm,
+                        apartment: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+              </div>
+
+              {/* City */}
+              <div>
+                <label className="form-control w-full">
+                  <div className="label">
+                    <span className="label-text">
+                      City
+                    </span>
+                  </div>
+
+                  <input
+                    type="text"
+                    className="input input-bordered w-full"
+                    value={checkoutForm.city}
+                    onChange={(e) =>
+                      setCheckoutForm({
+                        ...checkoutForm,
+                        city: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+              </div>
+
+              {/* Country */}
+              <div>
+                <label className="form-control w-full">
+                  <div className="label">
+                    <span className="label-text">
+                      Country
+                    </span>
+                  </div>
+
+                  <input
+                    type="text"
+                    className="input input-bordered w-full"
+                    value={checkoutForm.country}
+                    onChange={(e) =>
+                      setCheckoutForm({
+                        ...checkoutForm,
+                        country: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+              </div>
+
+              {/* Postal code */}
+              <div>
+                <label className="form-control w-full">
+                  <div className="label">
+                    <span className="label-text">
+                      Postal code
+                    </span>
+                  </div>
+
+                  <input
+                    type="text"
+                    className="input input-bordered w-full"
+                    value={checkoutForm.postalCode}
+                    onChange={(e) =>
+                      setCheckoutForm({
+                        ...checkoutForm,
+                        postalCode: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Order notice */}
+            <div>
+              <label className="form-control w-full">
+                <div className="label">
+                  <span className="label-text">
+                    Order notice
+                  </span>
+                </div>
+
+                <textarea
+                  className="textarea textarea-bordered h-32"
+                  value={checkoutForm.orderNotice}
+                  onChange={(e) =>
+                    setCheckoutForm({
+                      ...checkoutForm,
+                      orderNotice: e.target.value,
+                    })
+                  }
+                />
+              </label>
+            </div>
+
+            {/* Payment method */}
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">
+                Payment method
               </h2>
 
-              <div className="mt-6 grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-3">
-                <div className="sm:col-span-3">
-                  <label
-                    htmlFor="company"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Company *
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      type="text"
-                      id="company"
-                      name="company"
-                      required
-                      disabled={isSubmitting}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      value={checkoutForm.company}
-                      onChange={(e) =>
-                        setCheckoutForm({
-                          ...checkoutForm,
-                          company: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
+              <div className="flex flex-col gap-y-3">
 
-                <div className="sm:col-span-3">
-                  <label
-                    htmlFor="address"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Address *
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      type="text"
-                      id="address"
-                      name="address"
-                      autoComplete="street-address"
-                      required
-                      disabled={isSubmitting}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      value={checkoutForm.adress}
-                      onChange={(e) =>
-                        setCheckoutForm({
-                          ...checkoutForm,
-                          adress: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
+                {/* Card */}
+                <label className="flex items-center gap-x-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="card"
+                    className="radio"
+                    checked={
+                      checkoutForm.paymentMethod ===
+                      "card"
+                    }
+                    onChange={(e) =>
+                      setCheckoutForm({
+                        ...checkoutForm,
+                        paymentMethod:
+                          e.target.value,
+                      })
+                    }
+                  />
 
-                <div className="sm:col-span-3">
-                  <label
-                    htmlFor="apartment"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Apartment, suite, etc. * (required)
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      type="text"
-                      id="apartment"
-                      name="apartment"
-                      required
-                      disabled={isSubmitting}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      value={checkoutForm.apartment}
-                      onChange={(e) =>
-                        setCheckoutForm({
-                          ...checkoutForm,
-                          apartment: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
+                  <span>
+                    Credit / Debit Card
+                  </span>
+                </label>
 
-                <div>
-                  <label
-                    htmlFor="city"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    City *
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      type="text"
-                      id="city"
-                      name="city"
-                      autoComplete="address-level2"
-                      required
-                      disabled={isSubmitting}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      value={checkoutForm.city}
-                      onChange={(e) =>
-                        setCheckoutForm({
-                          ...checkoutForm,
-                          city: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
+                {/* UPI */}
+                <label className="flex items-center gap-x-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="upi"
+                    className="radio"
+                    checked={
+                      checkoutForm.paymentMethod ===
+                      "upi"
+                    }
+                    onChange={(e) =>
+                      setCheckoutForm({
+                        ...checkoutForm,
+                        paymentMethod:
+                          e.target.value,
+                      })
+                    }
+                  />
 
-                <div>
-                  <label
-                    htmlFor="region"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Country *
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      type="text"
-                      id="region"
-                      name="region"
-                      autoComplete="address-level1"
-                      required
-                      disabled={isSubmitting}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      value={checkoutForm.country}
-                      onChange={(e) =>
-                        setCheckoutForm({
-                          ...checkoutForm,
-                          country: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
+                  <span>UPI</span>
+                </label>
 
-                <div>
-                  <label
-                    htmlFor="postal-code"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Postal code *
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      type="text"
-                      id="postal-code"
-                      name="postal-code"
-                      autoComplete="postal-code"
-                      required
-                      disabled={isSubmitting}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      value={checkoutForm.postalCode}
-                      onChange={(e) =>
-                        setCheckoutForm({
-                          ...checkoutForm,
-                          postalCode: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
+                {/* Google Pay */}
+                <label className="flex items-center gap-x-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="gpay"
+                    className="radio"
+                    checked={
+                      checkoutForm.paymentMethod ===
+                      "gpay"
+                    }
+                    onChange={(e) =>
+                      setCheckoutForm({
+                        ...checkoutForm,
+                        paymentMethod:
+                          e.target.value,
+                      })
+                    }
+                  />
 
-                <div className="sm:col-span-3">
-                  <label
-                    htmlFor="order-notice"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Order notice
-                  </label>
-                  <div className="mt-1">
-                    <textarea
-                      className="textarea textarea-bordered textarea-lg w-full disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      id="order-notice"
-                      name="order-notice"
-                      autoComplete="order-notice"
-                      disabled={isSubmitting}
-                      value={checkoutForm.orderNotice}
-                      onChange={(e) =>
-                        setCheckoutForm({
-                          ...checkoutForm,
-                          orderNotice: e.target.value,
-                        })
-                      }
-                    ></textarea>
-                  </div>
-                </div>
+                  <span>Google Pay</span>
+                </label>
               </div>
-            </section>
+            </div>
 
-            <div className="mt-10 border-t border-gray-200 pt-6 ml-0">
+            {/* Payment error */}
+            {paymentError && (
+              <div className="alert alert-error">
+                <span>{paymentError}</span>
+              </div>
+            )}
+
+            {/* Submit */}
+            <div>
               <button
                 type="button"
-                onClick={makePurchase}
-                disabled={isSubmitting}
-                className="w-full rounded-md border border-transparent bg-blue-500 px-20 py-2 text-lg font-medium text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 focus:ring-offset-gray-50 sm:order-last disabled:bg-gray-400 disabled:cursor-not-allowed"
+                disabled={
+                  isSubmitting ||
+                  paymentProcessing ||
+                  checkoutProducts.length === 0
+                }
+                onClick={handleCheckout}
+                className="uppercase bg-blue-500 px-10 py-5 text-lg border border-gray-300 font-bold text-white shadow-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? "Processing Order..." : "Place Order"}
+                {paymentProcessing
+                  ? "Processing payment..."
+                  : isSubmitting
+                    ? "Creating order..."
+                    : "Place order"}
               </button>
             </div>
           </div>
-        </form>
-      </main>
+        </div>
+
+        {/* Order summary */}
+        <div>
+          <div className="border border-gray-300 p-6">
+
+            <h2 className="text-2xl font-semibold mb-6">
+              Your order
+            </h2>
+
+            <div className="flex flex-col gap-y-5">
+
+              {checkoutProducts.length === 0 ? (
+                <p>Your cart is empty.</p>
+              ) : (
+                checkoutProducts.map((product) => (
+                  <div
+                    key={product.id}
+                    className="flex items-center justify-between gap-x-4"
+                  >
+                    <div className="flex items-center gap-x-3">
+
+                      <Image
+                        src={
+                          product.mainImage
+                            ? `/${product.mainImage}`
+                            : "/product_placeholder.jpg"
+                        }
+                        alt={product.title}
+                        width={60}
+                        height={60}
+                        className="w-[60px] h-[60px] object-cover"
+                      />
+
+                      <div>
+                        <p className="font-semibold">
+                          {product.title}
+                        </p>
+
+                        <p className="text-sm text-gray-500">
+                          {product.amount} × $
+                          {Number(
+                            product.price
+                          ).toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className="font-semibold">
+                      $
+                      {(
+                        Number(product.price) *
+                        Number(product.amount)
+                      ).toFixed(2)}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Totals */}
+            <div className="border-t border-gray-300 mt-6 pt-6 flex flex-col gap-y-3">
+
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span>
+                  ${subtotal.toFixed(2)}
+                </span>
+              </div>
+
+              <div className="flex justify-between">
+                <span>Tax</span>
+                <span>
+                  ${tax.toFixed(2)}
+                </span>
+              </div>
+
+              <div className="flex justify-between">
+                <span>Shipping</span>
+                <span>
+                  ${SHIPPING_COST.toFixed(2)}
+                </span>
+              </div>
+
+              <div className="flex justify-between text-2xl font-bold border-t border-gray-300 pt-4">
+                <span>Total</span>
+
+                <span>
+                  ${total.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 };

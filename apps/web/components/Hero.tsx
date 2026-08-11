@@ -1,46 +1,61 @@
 // *********************
-// Role of the component: Classical hero component on home page
+// Role of the component: Modern hero component on home page
 // Name of the component: Hero.tsx
-// Developer: Aleksandar Kuzmanovic
-// Version: 1.0
+// Developer: AI Assistant
+// Version: 2.0
 // Component call: <Hero />
 // Input parameters: no input parameters
-// Output: Classical hero component with two columns on desktop and one column on smaller devices
+// Output: Modern hero component with fishing-specific messaging and call-to-action
 // *********************
 
 import Image from "next/image";
 import React from "react";
+import Link from "next/link";
 
 const Hero = () => {
   return (
-    <div className="h-[700px] w-full bg-blue-500 max-lg:h-[900px] max-md:h-[750px]">
-      <div className="grid grid-cols-3 items-center justify-items-center px-10 gap-x-10 max-w-screen-2xl mx-auto h-full max-lg:grid-cols-1 max-lg:py-10 max-lg:gap-y-10">
-        <div className="flex flex-col gap-y-5 max-lg:order-last col-span-2">
-          <h1 className="text-6xl text-white font-bold mb-3 max-xl:text-5xl max-md:text-4xl max-sm:text-3xl">
-            THE PRODUCT OF THE FUTURE
+    <div className="relative h-[650px] w-full bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 left-0 w-44 h-44 bg-white/10 rounded-full -translate-x-16 -translate-y-16 animate-[float_6s_ease-in_out_infinite]"></div>
+        <div className="absolute bottom-0 right-0 w-32 h-32 bg-white/15 rounded-full -translate-x-8 translate-y-8 animate-[float_8s_ease-in_out_infinite]"></div>
+      </div>
+
+      <div className="relative z-10 flex h-full items-center px-6 md:px-12 lg:px-20">
+        <div className="flex-1 max-w-2xl space-y-6">
+          <h1 className="text-4xl font-extremely-bold tracking-tighter text-white md:text-5xl lg:text-6xl">
+            Find the right fishnet for your fishing operation.
           </h1>
-          <p className="text-white max-sm:text-sm">
-            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Dolor modi
-            iure laudantium necessitatibus ab, voluptates vitae ullam. Officia
-            ipsam iusto beatae nesciunt, consequatur deserunt minima maiores
-            earum obcaecati. Optio, nam!
+
+          <p className="text-lg text-white/90 max-w-xl md:text-xl">
+            Discover fishnets from trusted sellers and suppliers, compare specifications, check availability, and order for your business or fishing needs.
           </p>
-          <div className="flex gap-x-1 max-lg:flex-col max-lg:gap-y-1">
-            <button className="bg-white text-blue-600 font-bold px-12 py-3 max-lg:text-xl max-sm:text-lg hover:bg-gray-100">
-              BUY NOW
-            </button>
-            <button className="bg-white text-blue-600 font-bold px-12 py-3 max-lg:text-xl max-sm:text-lg hover:bg-gray-100">
-              LEARN MORE
-            </button>
+
+          <div className="flex flex-wrap gap-4 mt-8">
+            <Link
+              href="/shop"
+              className="flex items-center justify-center px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition-all duration-300 transform hover:-translate-y-1 shadow-lg"
+            >
+              Browse Fishnets
+            </Link>
+            <Link
+              href="/register-seller"
+              className="flex items-center justify-center px-8 py-4 bg-white/20 text-white border border-white/20 font-semibold rounded-lg hover:bg-white/30 hover:text-blue-600 transition-all duration-300 transform hover:-translate-y-1"
+            >
+              Sell on Aazhimin
+            </Link>
           </div>
         </div>
-        <Image
-          src="/watch for banner.png"
-          width={400}
-          height={400}
-          alt="smart watch"
-          className="max-md:w-[300px] max-md:h-[300px] max-sm:h-[250px] max-sm:w-[250px] w-auto h-auto"
-        />
+
+        <div className="flex-1 flex justify-center hidden md:block">
+          <Image
+            src="/fishing-net-hero.png"
+            alt="Professional fishing net in action"
+            width={500}
+            height={400}
+            className="rounded-2xl shadow-2xl border-4 border-white/20"
+          />
+        </div>
       </div>
     </div>
   );

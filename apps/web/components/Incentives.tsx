@@ -11,6 +11,7 @@
 import { incentives } from '@/lib/utils'
 import Image from 'next/image'
 import React from 'react'
+import { sanitize } from '@/lib/sanitize'
 
 const Incentives = () => {
   return (

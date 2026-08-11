@@ -1,14 +1,4 @@
-// *********************
-// Role of the component: SortBy
-// Name of the component: SortBy.tsx
-// Developer: Aleksandar Kuzmanovic
-// Version: 1.0
-// Component call: <SortBy />
-// Input parameters: no input parameters
-// Output: select input with options for sorting by a-z, z-a, price low, price high
-// *********************
-
-"use client";
+'use client';
 import React from "react";
 import { useSortStore } from "@/app/_zustand/sortStore";
 
@@ -26,10 +16,10 @@ const SortBy = () => {
         name="sort"
       >
         <option value="defaultSort">Default</option>
-        <option value="titleAsc">Sort A-Z</option>
-        <option value="titleDesc">Sort Z-A</option>
-        <option value="lowPrice">Lowest Price</option>
-        <option value="highPrice">Highest Price</option>
+        <option value="titleAsc">Name: A to Z</option>
+        <option value="titleDesc">Name: Z to A</option>
+        <option value="lowPrice">Price: Low to High</option>
+        <option value="highPrice">Price: High to Low</option>
       </select>
     </div>
   );

@@ -1,19 +1,37 @@
 import config from './config';
 
+const authTokenKey = "aazhimin_access_token";
+
+export const getStoredAccessToken = () => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return window.localStorage.getItem(authTokenKey);
+};
+
 export const apiClient = {
   baseUrl: config.apiBaseUrl,
   
   async request(endpoint: string, options: RequestInit = {}) {
     const url = `${this.baseUrl}${endpoint}`;
+    const { headers: _headers, ...requestOptions } = options;
+    const token = getStoredAccessToken();
+    const headers = new Headers(_headers);
+
+    if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+      headers.set('Content-Type', 'application/json');
+    }
+
+    if (token && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
     
     const defaultOptions: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
     };
     
-    return fetch(url, { ...defaultOptions, ...options });
+    return fetch(url, { ...requestOptions, ...defaultOptions });
   },
   
   // Convenience methods
@@ -24,7 +42,7 @@ export const apiClient = {
     apiClient.request(endpoint, {
       ...options,
       method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
+      body: data instanceof FormData ? data : data ? JSON.stringify(data) : undefined,
     }),
     
   put: (endpoint: string, data?: any, options?: RequestInit) =>

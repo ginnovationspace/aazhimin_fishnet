@@ -1,17 +1,18 @@
 const prisma = require("@aazhimin/database");
+const { asyncHandler } = require("../middleware/errorHandler");
 
-async function getSingleProductImages(request, response) {
+const getSingleProductImages = asyncHandler(async (request, response) => {
   const { id } = request.params;
   const images = await prisma.image.findMany({
     where: { productID: id },
   });
-  if (!images) {
-    return response.json({ error: "Images not found" }, { status: 404 });
+  if (images.length === 0) {
+    return response.status(404).json({ error: "Images not found" });
   }
   return response.json(images);
-}
+});
 
-async function createImage(request, response) {
+const createImage = asyncHandler(async (request, response) => {
   try {
     const { productID, image } = request.body;
     const createImage = await prisma.image.create({
@@ -25,31 +26,31 @@ async function createImage(request, response) {
     console.error("Error creating image:", error);
     return response.status(500).json({ error: "Error creating image" });
   }
-}
+});
 
-async function updateImage(request, response) {
+const updateImage = asyncHandler(async (request, response) => {
   try {
-    const { id } = request.params; // Getting product id from params
+    const { id } = request.params;
     const { productID, image } = request.body;
 
-    // Checking whether photo exists for the given product id
-    const existingImage = await prisma.image.findFirst({
+    // Check if image exists
+    const existingImage = await prisma.image.findUnique({
       where: {
-        productID: id, // Finding photo with a product id
+        imageID: id,
       },
     });
 
-    // if photo doesn't exist, return coresponding status code
+    // if image doesn't exist, return error
     if (!existingImage) {
       return response
         .status(404)
-        .json({ error: "Image not found for the provided productID" });
+        .json({ error: "Image not found" });
     }
 
-    // Updating photo using coresponding imageID
+    // Update image
     const updatedImage = await prisma.image.update({
       where: {
-        imageID: existingImage.imageID,
+        imageID: id,
       },
       data: {
         productID: productID,
@@ -62,14 +63,14 @@ async function updateImage(request, response) {
     console.error("Error updating image:", error);
     return response.status(500).json({ error: "Error updating image" });
   }
-}
+});
 
-async function deleteImage(request, response) {
+const deleteImage = asyncHandler(async (request, response) => {
   try {
     const { id } = request.params;
-    await prisma.image.deleteMany({
+    await prisma.image.delete({
       where: {
-        productID: String(id),
+        imageID: id,
       },
     });
     return response.status(204).send();
@@ -77,7 +78,7 @@ async function deleteImage(request, response) {
     console.error("Error deleting image:", error);
     return response.status(500).json({ error: "Error deleting image" });
   }
-}
+});
 
 module.exports = {
   getSingleProductImages,

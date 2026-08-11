@@ -1,79 +1,263 @@
-// *********************
-// Role of the component: Single product tabs on the single product page containing product description, main product info and reviews
-// Name of the component: ProductTabs.tsx
-// Developer: Aleksandar Kuzmanovic
-// Version: 1.0
-// Component call: <ProductTabs product={product} />
-// Input parameters: { product: Product }
-// Output: Single product tabs containing product description, main product info and reviews
-// *********************
-
-"use client";
+'use client';
 
 import React, { useState } from "react";
-import RatingPercentElement from "./RatingPercentElement";
-import SingleReview from "./SingleReview";
 import { formatCategoryName } from "@/utils/categoryFormating";
 import { sanitize, sanitizeHtml } from "@/lib/sanitize";
 
-const ProductTabs = ({ product }: { product: Product }) => {
-  const [currentProductTab, setCurrentProductTab] = useState<number>(0);
+interface ProductTabsProduct {
+  description?: string | null;
+  manufacturer?: string | null;
+  category?: {
+    name?: string | null;
+  } | null;
+  // Fishnet-specific fields
+  netType?: string;
+  meshSize?: string;
+  material?: string;
+  netLength?: number | string;
+  netHeight?: number | string;
+  threadDiameter?: number | string;
+  breakingStrength?: number | string;
+  color?: string;
+  usage?: string;
+  targetFishOrSpecies?: string;
+  waterType?: string;
+  countryOfOrigin?: string;
+  weight?: number | string;
+}
+
+interface ProductTabsProps {
+  product: ProductTabsProduct;
+}
+
+const ProductTabs = ({ product }: ProductTabsProps) => {
+  const [currentProductTab, setCurrentProductTab] = useState(0);
 
   return (
-    <div className="px-5 text-black">
-      <div role="tablist" className="tabs tabs-bordered">
-        <a
+    <div className="w-full">
+      {/* Tabs */}
+      <div
+        role="tablist"
+        className="flex items-center gap-6 border-b border-gray-200"
+      >
+        <button
+          type="button"
           role="tab"
-          className={`tab text-lg text-black pb-8 max-[500px]:text-base max-[400px]:text-sm max-[370px]:text-xs ${
-            currentProductTab === 0 && "tab-active"
-          }`}
+          aria-selected={currentProductTab === 0}
           onClick={() => setCurrentProductTab(0)}
+          className={`pb-4 text-lg transition-colors max-[500px]:text-base max-[370px]:text-sm ${
+            currentProductTab === 0
+              ? "border-b-2 border-blue-600 font-semibold text-blue-600"
+              : "text-gray-600 hover:text-blue-600"
+          }`}
         >
           Description
-        </a>
-        <a
+        </button>
+
+        <button
+          type="button"
           role="tab"
-          className={`tab text-black text-lg pb-8 max-[500px]:text-base max-[400px]:text-sm max-[370px]:text-xs ${
-            currentProductTab === 1 && "tab-active"
-          }`}
+          aria-selected={currentProductTab === 1}
           onClick={() => setCurrentProductTab(1)}
+          className={`pb-4 text-lg transition-colors max-[500px]:text-base max-[370px]:text-sm ${
+            currentProductTab === 1
+              ? "border-b-2 border-blue-600 font-semibold text-blue-600"
+              : "text-gray-600 hover:text-blue-600"
+          }`}
         >
-          Additional info
-        </a>
+          Specifications
+        </button>
       </div>
-      <div className="pt-5">
+
+      {/* Tab Content */}
+      <div className="pt-6">
+        {/* Description */}
         {currentProductTab === 0 && (
-          <div 
-            className="text-lg max-sm:text-base max-sm:text-sm"
-            dangerouslySetInnerHTML={{ 
-              __html: sanitizeHtml(product?.description) 
+          <div
+            className="text-lg leading-8 text-gray-700 max-sm:text-base"
+            dangerouslySetInnerHTML={{
+              __html: sanitizeHtml(product?.description ?? ""),
             }}
           />
         )}
 
+        {/* Specifications */}
         {currentProductTab === 1 && (
           <div className="overflow-x-auto">
-            <table className="table text-xl text-center max-[500px]:text-base">
+            <table className="w-full text-left text-base">
               <tbody>
-                {/* row 1 */}
-                <tr>
-                  <th>Manufacturer:</th>
-                  <td>{sanitize(product?.manufacturer)}</td>
-                </tr>
-                {/* row 2 */}
-                <tr>
-                  <th>Category:</th>
-                  <td>
-                    {product?.category?.name
-                      ? sanitize(formatCategoryName(product?.category?.name))
-                      : "No category"}
-                  </td>
-                </tr>
-                {/* row 3 */}
-                <tr>
-                  <th>Color:</th>
-                  <td>Silver, LightSlateGray, Blue</td>
-                </tr>
+                {/* Net Type */}
+                {product.netType && (
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-4 font-semibold text-gray-700">
+                      Net Type
+                    </th>
+                    <td className="px-4 py-4 text-gray-600">
+                      {sanitize(product.netType)}
+                    </td>
+                  </tr>
+                )}
+
+                {/* Material */}
+                {product.material && (
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-4 font-semibold text-gray-700">
+                      Material
+                    </th>
+                    <td className="px-4 py-4 text-gray-600">
+                      {sanitize(product.material)}
+                    </td>
+                  </tr>
+                )}
+
+                {/* Mesh Size */}
+                {product.meshSize && (
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-4 font-semibold text-gray-700">
+                      Mesh Size
+                    </th>
+                    <td className="px-4 py-4 text-gray-600">
+                      {sanitize(product.meshSize)}
+                    </td>
+                  </tr>
+                )}
+
+                {/* Dimensions */}
+                {(product.netLength !== undefined && product.netLength !== null) ||
+                 (product.netHeight !== undefined && product.netHeight !== null) && (
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-4 font-semibold text-gray-700">
+                      Dimensions
+                    </th>
+                    <td className="px-4 py-4 text-gray-600">
+                      {product.netLength !== undefined && product.netLength !== null
+                        ? `${product.netLength}${product.netHeight !== undefined && product.netHeight !== null ? ` x ${product.netHeight}` : ''} m`
+                        : product.netHeight !== undefined && product.netHeight !== null
+                          ? `${product.netHeight} m`
+                          : 'N/A'}
+                    </td>
+                  </tr>
+                )}
+
+                {/* Thread Diameter */}
+                {product.threadDiameter !== undefined && product.threadDiameter !== null && (
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-4 font-semibold text-gray-700">
+                      Thread Diameter
+                    </th>
+                    <td className="px-4 py-4 text-gray-600">
+                      {sanitize(product.threadDiameter)} mm
+                    </td>
+                  </tr>
+                )}
+
+                {/* Breaking Strength */}
+                {product.breakingStrength !== undefined && product.breakingStrength !== null && (
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-4 font-semibold text-gray-700">
+                      Breaking Strength
+                    </th>
+                    <td className="px-4 py-4 text-gray-600">
+                      {sanitize(product.breakingStrength)} kg
+                    </td>
+                  </tr>
+                )}
+
+                {/* Color */}
+                {product.color && (
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-4 font-semibold text-gray-700">
+                      Color
+                    </th>
+                    <td className="px-4 py-4 text-gray-600">
+                      {sanitize(product.color)}
+                    </td>
+                  </tr>
+                )}
+
+                {/* Usage */}
+                {product.usage && (
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-4 font-semibold text-gray-700">
+                      Usage
+                    </th>
+                    <td className="px-4 py-4 text-gray-600">
+                      {sanitize(product.usage)}
+                    </td>
+                  </tr>
+                )}
+
+                {/* Target Fish/Species */}
+                {product.targetFishOrSpecies && (
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-4 font-semibold text-gray-700">
+                      Target Fish/Species
+                    </th>
+                    <td className="px-4 py-4 text-gray-600">
+                      {sanitize(product.targetFishOrSpecies)}
+                    </td>
+                  </tr>
+                )}
+
+                {/* Water Type */}
+                {product.waterType && (
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-4 font-semibold text-gray-700">
+                      Water Type
+                    </th>
+                    <td className="px-4 py-4 text-gray-600">
+                      {sanitize(product.waterType)}
+                    </td>
+                  </tr>
+                )}
+
+                {/* Country of Origin */}
+                {product.countryOfOrigin && (
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-4 font-semibold text-gray-700">
+                      Country of Origin
+                    </th>
+                    <td className="px-4 py-4 text-gray-600">
+                      {sanitize(product.countryOfOrigin)}
+                    </td>
+                  </tr>
+                )}
+
+                {/* Weight */}
+                {product.weight !== undefined && product.weight !== null && (
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-4 font-semibold text-gray-700">
+                      Weight
+                    </th>
+                    <td className="px-4 py-4 text-gray-600">
+                      {sanitize(product.weight)} kg
+                    </td>
+                  </tr>
+                )}
+
+                {/* Manufacturer (if available) */}
+                {product.manufacturer && (
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-4 font-semibold text-gray-700">
+                      Manufacturer
+                    </th>
+                    <td className="px-4 py-4 text-gray-600">
+                      {sanitize(product.manufacturer)}
+                    </td>
+                  </tr>
+                )}
+
+                {/* Category */}
+                {product.category?.name && (
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-4 font-semibold text-gray-700">
+                      Category
+                    </th>
+                    <td className="px-4 py-4 text-gray-600">
+                      {sanitize(formatCategoryName(product.category.name))}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

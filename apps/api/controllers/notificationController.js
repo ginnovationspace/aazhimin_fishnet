@@ -193,7 +193,7 @@ const deleteNotification = async (req, res) => {
     const { userId } = req.body;
 
     // Ensure user can only delete their own notifications
-    const notification = await prisma.notification.first({
+    const notification = await prisma.notification.findFirst({
       where: { id, userId }
     });
 

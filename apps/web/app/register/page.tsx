@@ -1,7 +1,9 @@
 "use client";
-import { CustomButton, SectionTitle } from "@/components";
-import { useSession } from "next-auth/react";
-import Image from "next/image";
+
+import { CustomButton } from "@/components";
+import { useSession } from "@/lib/auth-client";
+import apiClient from "@/lib/api";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -12,7 +14,6 @@ const RegisterPage = () => {
   const { data: session, status: sessionStatus } = useSession();
 
   useEffect(() => {
-    // chechking if user has already registered redirect to home page
     if (sessionStatus === "authenticated") {
       router.replace("/");
     }
@@ -22,12 +23,31 @@ const RegisterPage = () => {
     const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
     return emailRegex.test(email);
   };
-  
-  const handleSubmit = async (e: any) => {
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const email = e.target[2].value;
-    const password = e.target[3].value;
-    const confirmPassword = e.target[4].value;
+
+    const formData = new FormData(e.currentTarget);
+
+    const name = String(formData.get("name") || "").trim();
+    const lastname = String(formData.get("lastname") || "").trim();
+    const email = String(formData.get("email") || "").trim();
+    const password = String(formData.get("password") || "");
+    const confirmPassword = String(
+      formData.get("confirmpassword") || ""
+    );
+
+    if (!name) {
+      setError("Name is required");
+      toast.error("Name is required");
+      return;
+    }
+
+    if (!lastname) {
+      setError("Lastname is required");
+      toast.error("Lastname is required");
+      return;
+    }
 
     if (!isValidEmail(email)) {
       setError("Email is invalid");
@@ -36,28 +56,25 @@ const RegisterPage = () => {
     }
 
     if (!password || password.length < 8) {
-      setError("Password must be 8 characters long");
-      toast.error("Password must be 8 characters long");
+      setError("Password must be at least 8 characters long");
+      toast.error("Password must be at least 8 characters long");
       return;
     }
 
     if (confirmPassword !== password) {
-      setError("Passwords are not equal");
-      toast.error("Passwords are not equal");
+      setError("Passwords do not match");
+      toast.error("Passwords do not match");
       return;
     }
 
+    setError("");
+
     try {
-      // sending API request for registering user
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
+      const res = await apiClient.post("/api/auth/register", {
+        name,
+        lastname,
+        email,
+        password,
       });
 
       const data = await res.json();
@@ -65,46 +82,60 @@ const RegisterPage = () => {
       if (res.ok) {
         setError("");
         toast.success("Registration successful");
+
         router.push("/login");
+        return;
+      }
+
+      if (data.details && Array.isArray(data.details)) {
+        const errorMessage = data.details
+          .map((err: { message?: string }) => err.message)
+          .filter(Boolean)
+          .join(", ");
+
+        setError(errorMessage || "Registration failed");
+        toast.error(errorMessage || "Registration failed");
+      } else if (data.error) {
+        setError(data.error);
+        toast.error(data.error);
       } else {
-        // Handle different types of errors
-        if (data.details && Array.isArray(data.details)) {
-          // Validation errors
-          const errorMessage = data.details.map((err: any) => err.message).join(", ");
-          setError(errorMessage);
-          toast.error(errorMessage);
-        } else if (data.error) {
-          // General errors
-          setError(data.error);
-          toast.error(data.error);
-        } else {
-          setError("Registration failed");
-          toast.error("Registration failed");
-        }
+        setError("Registration failed");
+        toast.error("Registration failed");
       }
     } catch (error) {
-      toast.error("Error, try again");
-      setError("Error, try again");
-      console.log(error);
+      console.error("Registration error:", error);
+      setError("Something went wrong. Please try again.");
+      toast.error("Something went wrong. Please try again.");
     }
   };
 
   if (sessionStatus === "loading") {
-    return <h1>Loading...</h1>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <h1 className="text-lg text-gray-700">Loading...</h1>
+      </div>
+    );
   }
+
   return (
-    <div className="bg-white">
-      <SectionTitle title="Register" path="Home | Register" />
-      <div className="flex min-h-full flex-1 flex-col justify-center py-12 sm:px-6 lg:px-8 bg-white">
-        <div className="flex justify-center flex-col items-center">
-          <h2 className="mt-6 text-center text-2xl leading-9 tracking-tight text-gray-900">
-            Sign up on our website
+    <div className="min-h-screen bg-white">
+      <div className="flex min-h-full flex-1 flex-col justify-center py-12 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <h2 className="mt-6 text-center text-2xl font-normal leading-9 tracking-tight text-gray-900">
+            Join the Fishnet Marketplace Community
           </h2>
+
+          <p className="mt-2 text-center text-sm text-gray-500">
+            Create your Aazhimin Fishnet Marketplace account
+          </p>
         </div>
 
+        {/* Register Card */}
         <div className="mt-5 sm:mx-auto sm:w-full sm:max-w-[480px]">
           <div className="bg-white px-6 py-12 shadow sm:rounded-lg sm:px-12">
             <form className="space-y-6" onSubmit={handleSubmit}>
+              {/* Name */}
               <div>
                 <label
                   htmlFor="name"
@@ -112,17 +143,20 @@ const RegisterPage = () => {
                 >
                   Name
                 </label>
+
                 <div className="mt-2">
                   <input
                     id="name"
                     name="name"
                     type="text"
+                    autoComplete="given-name"
                     required
-                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6"
                   />
                 </div>
               </div>
 
+              {/* Lastname */}
               <div>
                 <label
                   htmlFor="lastname"
@@ -130,17 +164,20 @@ const RegisterPage = () => {
                 >
                   Lastname
                 </label>
+
                 <div className="mt-2">
                   <input
                     id="lastname"
                     name="lastname"
                     type="text"
+                    autoComplete="family-name"
                     required
-                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6"
                   />
                 </div>
               </div>
 
+              {/* Email */}
               <div>
                 <label
                   htmlFor="email"
@@ -148,6 +185,7 @@ const RegisterPage = () => {
                 >
                   Email address
                 </label>
+
                 <div className="mt-2">
                   <input
                     id="email"
@@ -155,11 +193,12 @@ const RegisterPage = () => {
                     type="email"
                     autoComplete="email"
                     required
-                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6"
                   />
                 </div>
               </div>
 
+              {/* Password */}
               <div>
                 <label
                   htmlFor="password"
@@ -167,18 +206,25 @@ const RegisterPage = () => {
                 >
                   Password
                 </label>
+
                 <div className="mt-2">
                   <input
                     id="password"
                     name="password"
                     type="password"
-                    autoComplete="current-password"
+                    autoComplete="new-password"
                     required
-                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                    minLength={8}
+                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6"
                   />
                 </div>
+
+                <p className="mt-1 text-xs text-gray-500">
+                  Password must be at least 8 characters.
+                </p>
               </div>
 
+              {/* Confirm Password */}
               <div>
                 <label
                   htmlFor="confirmpassword"
@@ -186,35 +232,53 @@ const RegisterPage = () => {
                 >
                   Confirm password
                 </label>
+
                 <div className="mt-2">
                   <input
                     id="confirmpassword"
                     name="confirmpassword"
                     type="password"
-                    autoComplete="current-password"
+                    autoComplete="new-password"
                     required
-                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                    minLength={8}
+                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-sky-600 sm:text-sm sm:leading-6"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black"
-                  />
-                  <label
-                    htmlFor="remember-me"
-                    className="ml-3 block text-sm leading-6 text-gray-900"
+              {/* Terms */}
+              <div className="flex items-start">
+                <input
+                  id="terms"
+                  name="terms"
+                  type="checkbox"
+                  required
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-600"
+                />
+
+                <label
+                  htmlFor="terms"
+                  className="ml-3 block text-sm leading-6 text-gray-900"
+                >
+                  I agree to the{" "}
+                  <Link
+                    href="/terms"
+                    className="font-semibold text-sky-600 hover:text-sky-700"
                   >
-                    Accept our terms and privacy policy
-                  </label>
-                </div>
+                    Terms
+                  </Link>{" "}
+                  and{" "}
+                  <Link
+                    href="/privacy"
+                    className="font-semibold text-sky-600 hover:text-sky-700"
+                  >
+                    Privacy Policy
+                  </Link>
+                  .
+                </label>
               </div>
 
+              {/* Submit */}
               <div>
                 <CustomButton
                   buttonType="submit"
@@ -225,11 +289,26 @@ const RegisterPage = () => {
                   textSize="sm"
                 />
 
-                <p className="text-red-600 text-center text-[16px] my-4">
-                  {error && error}
-                </p>
+                {error && (
+                  <p className="my-4 text-center text-[16px] text-red-600">
+                    {error}
+                  </p>
+                )}
               </div>
             </form>
+
+            {/* Login Link */}
+            <div className="mt-8 border-t border-gray-200 pt-6">
+              <p className="text-center text-sm text-gray-600">
+                Already have an account?{" "}
+                <Link
+                  href="/login"
+                  className="font-semibold text-sky-600 transition hover:text-sky-700"
+                >
+                  Login
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
       </div>

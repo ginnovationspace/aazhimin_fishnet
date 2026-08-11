@@ -1,19 +1,19 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
 import { useNotifications } from '@/hooks/useNotifications';
 import { NotificationType } from '@/types/notification';
 import NotificationCard from '@/components/NotificationCard';
 import { useNotificationStore } from '@/app/_zustand/notificationStore';
-import { 
-  FaSearch, 
-  FaFilter, 
-  FaCheckCircle, 
-  FaTrash, 
+import {
+  FaSearch,
+  FaFilter,
+  FaCheckCircle,
+  FaTrash,
   FaSpinner,
-  FaBell 
+  FaBell
 } from 'react-icons/fa';
 
 const NotificationsPage = () => {
@@ -73,7 +73,7 @@ const NotificationsPage = () => {
   // Handle search
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    updateFilters({ 
+    updateFilters({
       ...filters,
       search: searchTerm || undefined,
       page: 1
@@ -141,10 +141,10 @@ const NotificationsPage = () => {
         <div className="mb-8">
           <div className="flex items-center space-x-3 mb-2">
             <FaBell className="text-2xl text-blue-600" />
-            <h1 className="text-3xl font-bold text-gray-900">Notification Center</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Your Fishnet Marketplace Notifications</h1>
           </div>
           <p className="text-gray-600">
-            Manage and view all your notifications in one place
+            Manage and view all your Aazhimin fishnet marketplace notifications in one place
           </p>
         </div>
 
@@ -207,10 +207,10 @@ const NotificationsPage = () => {
                 setSearchTerm('');
                 setSelectedType('all');
                 setSelectedStatus('all');
-                updateFilters({ 
-                  type: undefined, 
-                  isRead: undefined, 
-                  search: undefined, 
+                updateFilters({
+                  type: undefined,
+                  isRead: undefined,
+                  search: undefined,
                   page: 1,
                   limit: 10,
                   sortBy: 'createdAt',
@@ -271,7 +271,7 @@ const NotificationsPage = () => {
           {loading && notifications.length === 0 ? (
             <div className="text-center py-12">
               <FaSpinner className="animate-spin text-3xl text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Loading notifications...</p>
+              <p className="text-gray-500">Loading your fishnet marketplace notifications...</p>
             </div>
           ) : error ? (
             <div className="text-center py-12">
@@ -296,7 +296,7 @@ const NotificationsPage = () => {
               <p className="text-gray-500">
                 {Object.keys(filters).some(key => filters[key as keyof typeof filters] !== undefined && key !== 'page' && key !== 'limit' && key !== 'sortBy' && key !== 'sortOrder')
                   ? "Try adjusting your filters to see more notifications."
-                  : "You don't have any notifications yet."}
+                  : "You don't have any fishnet marketplace notifications yet."}
               </p>
             </div>
           ) : (
