@@ -39,7 +39,7 @@ const IntroducingSection = () => {
           <div className="bg-blue-50 p-8 rounded-2xl border border-blue-200">
             <h3 className="text-2xl font-semibold text-blue-600 mb-4">Our Mission</h3>
             <p className="text-gray-700">
-              To create a trusted, efficient marketplace that connects fishnet buyers and sellers, enabling seamless transactions and supporting the fishing industry's growth.
+              To create a trusted, efficient marketplace that connects fishnet buyers and sellers, enabling seamless transactions and supporting the fishing industry&apos;s growth.
             </p>
           </div>
 

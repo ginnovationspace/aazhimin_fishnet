@@ -124,7 +124,7 @@ const ProductsSection = () => {
                 </p>
 
                 <p className="mt-4">
-                  Check back soon as we're constantly adding new fishnets to
+                  Check back soon as we&apos;re constantly adding new fishnets to
                   help you succeed on the water.
                 </p>
 
@@ -147,4 +147,3 @@ const ProductsSection = () => {
 }
 
 export default ProductsSection
-

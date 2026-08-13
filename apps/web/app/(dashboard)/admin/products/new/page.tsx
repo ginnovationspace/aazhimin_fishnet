@@ -169,10 +169,7 @@ const AddNewProduct = () => {
     formData.append("uploadedFile", file);
 
     try {
-      const response = await apiClient.post("/api/main-image", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await apiClient.post("/api/main-image", formData);
 
       if (!response.ok) {
         throw new Error(
@@ -180,13 +177,15 @@ const AddNewProduct = () => {
         );
       }
 
+      const uploadResult = await response.json();
+
       /*
        * The existing backend appears to use the uploaded filename
        * as the product mainImage value.
        */
       setProduct((previous) => ({
         ...previous,
-        mainImage: file.name,
+        mainImage: uploadResult.filename || file.name,
       }));
 
       toast.success("Product image uploaded successfully");

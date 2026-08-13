@@ -13,6 +13,7 @@ const {
 router.route("/").get(getAllWishlist).post(createWishItem);
 
 router.route("/:userId").get(getAllWishlistByUserId);
-router.route("/:userId/:productId").get(getSingleProductFromWishlist).delete(deleteWishItem);
+router.route("/:userId/:productId").get(getSingleProductFromWishlist);
+router.route("/product/:productId").delete(deleteWishItem);
 
 module.exports = router;

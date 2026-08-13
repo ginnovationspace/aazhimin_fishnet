@@ -1,4 +1,5 @@
 const prisma = require("@aazhimin/database");
+const path = require("path");
 const { asyncHandler, AppError } = require("../middleware/errorHandler");
 
 const uploadMainImage = asyncHandler(async (req, res) => {
@@ -9,9 +10,11 @@ const uploadMainImage = asyncHandler(async (req, res) => {
     // Get file from a request
     const uploadedFile = req.files.uploadedFile;
 
-    // Using mv method for moving file to the directory on the server
+    const filename = path.basename(uploadedFile.name);
+    const uploadPath = path.resolve(__dirname, "../../web/public", filename);
+
     await new Promise((resolve, reject) => {
-        uploadedFile.mv('../public/' + uploadedFile.name, (err) => {
+        uploadedFile.mv(uploadPath, (err) => {
             if (err) {
                 reject(err);
             } else {
@@ -20,7 +23,7 @@ const uploadMainImage = asyncHandler(async (req, res) => {
         });
     });
 
-    res.status(200).json({ message: "File successfully uploaded" });
+    res.status(200).json({ message: "File successfully uploaded", filename });
 });
 
 module.exports = {

@@ -378,7 +378,7 @@ const BuyerOrderDetailsPage = () => {
           </h1>
 
           <p className="mt-3 text-gray-600">
-            We couldn't find this order.
+            We couldn&apos;t find this order.
           </p>
 
           <button

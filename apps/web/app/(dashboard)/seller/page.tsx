@@ -27,6 +27,47 @@ const SellerDashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (status === "loading") return;
+
+    if (status === "unauthenticated") {
+      router.replace("/login");
+      return;
+    }
+
+    if (session?.user?.role === "ADMIN") {
+      router.replace("/admin");
+    } else if (session?.user?.role !== "SELLER") {
+      router.replace("/");
+    }
+  }, [router, session?.user?.role, status]);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (status !== "authenticated" || session?.user?.role !== "SELLER") {
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const statsResponse = await apiClient.get(`/api/seller/stats`);
+        if (statsResponse.ok) {
+          const statsData = await statsResponse.json();
+          setStats(statsData);
+        }
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err);
+        setError("Failed to load dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [session?.user?.role, status]);
+
   /* ============================================================
      AUTHENTICATION
   ============================================================ */
@@ -45,8 +86,6 @@ const SellerDashboardPage = () => {
   }
 
   if (status === "unauthenticated") {
-    router.replace("/login");
-
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <p className="text-gray-600">
@@ -61,12 +100,6 @@ const SellerDashboardPage = () => {
   ============================================================ */
 
   if (session?.user?.role !== "SELLER") {
-    if (session?.user?.role === "ADMIN") {
-      router.replace("/admin");
-    } else {
-      router.replace("/");
-    }
-
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <p className="text-gray-600">
@@ -87,37 +120,6 @@ const SellerDashboardPage = () => {
 
   const storeName =
     session.user.name?.trim() || "Not Set";
-
-  /* ============================================================
-     FETCH DASHBOARD DATA
-  ============================================================ */
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      if (!session?.user) return;
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        // Get seller stats
-        const statsResponse = await apiClient.get(`/api/seller/stats`);
-        if (statsResponse.ok) {
-          const statsData = await statsResponse.json();
-          setStats(statsData);
-        }
-
-        // Get recent activity if needed
-      } catch (err) {
-        console.error("Error fetching dashboard data:", err);
-        setError("Failed to load dashboard data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, [session]);
 
   /* ============================================================
      DASHBOARD

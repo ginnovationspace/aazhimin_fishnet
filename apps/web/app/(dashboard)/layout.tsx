@@ -1,12 +1,26 @@
-import { requireAdmin } from "@/utils/adminAuth";
+"use client";
 
-export default async function Layout({
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
+
+export default function Layout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // This function handles all authentication and authorization server-side
-  await requireAdmin();
+  const { status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/login");
+    }
+  }, [router, status]);
+
+  if (status === "loading" || status === "unauthenticated") {
+    return null;
+  }
 
   return <>{children}</>;
 }

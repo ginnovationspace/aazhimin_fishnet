@@ -278,7 +278,7 @@ const Products = ({
         </h2>
 
         <p className="mt-2 max-w-md text-sm text-gray-600">
-          We couldn't load the products at the
+          We couldn&apos;t load the products at the
           moment. Please try again.
         </p>
 
@@ -307,7 +307,7 @@ const Products = ({
         </h2>
 
         <p className="mt-2 max-w-md text-sm text-gray-600">
-          We couldn't find any fishnets matching
+          We couldn&apos;t find any fishnets matching
           your current filters. Try adjusting your
           search criteria or clearing some filters.
         </p>
