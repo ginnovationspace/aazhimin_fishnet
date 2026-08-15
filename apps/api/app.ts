@@ -33,9 +33,10 @@ import buyerOrderRouter from './routes/buyerOrder';
 import reviewRouter from './routes/review';
 import adminRouter from './routes/admin';
 
-// Load env from server/.env then fallback to project root .env
+// Prefer the repository environment file, then use an API-local file only as
+// a fallback. dotenv does not overwrite existing values by default.
+dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env') });
 dotenv.config({ path: path.resolve(__dirname, '.env') });
-dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
 const app: Express = express();
 
