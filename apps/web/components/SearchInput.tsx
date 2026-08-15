@@ -34,23 +34,23 @@ const SearchInput = () => {
   }, [searchInput]);
 
   // Function to handle search submission
-  const searchProducts = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    // Sanitize the search input before using it in URL
-    const sanitizedSearch = sanitize(searchInput);
+  const submitSearch = (value: string) => {
+    const sanitizedSearch = sanitize(value);
     if (sanitizedSearch.trim()) {
-      router.push(`/search?q=${encodeURIComponent(sanitizedSearch)}`);
+      router.push(`/search?search=${encodeURIComponent(sanitizedSearch)}`);
     }
     setSearchInput("");
     setSuggestions([]);
   };
 
+  const searchProducts = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    submitSearch(searchInput);
+  };
+
   // Function to handle selecting a suggestion
   const handleSelectSuggestion = (suggestion: string) => {
-    setSearchInput(suggestion);
-    setSuggestions([]);
-    // Submit the search when a suggestion is selected
-    searchProducts(new FormEvent(new FormData()));
+    submitSearch(suggestion);
   };
 
   return (
@@ -78,9 +78,9 @@ const SearchInput = () => {
             className="ml-2 px-4 py-3 bg-blue-600 text-white font-medium rounded-l-none rounded-r-xl hover:bg-blue-700 transition-colors hover:text-white shadow-md"
           >
             Search
-            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {/* <svg className="w-4 h-2 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35M10.5 10.5a6 6 0 100-12 6 6 0 000 12z"></path>
-            </svg>
+            </svg> */}
           </button>
         </form>
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document audits the build system of the Aazhimin repository by examining the configured scripts and attempting to run standard build tasks (where possible).
+This document audits the build system of the fishnet repository by examining the configured scripts and attempting to run standard build tasks (where possible).
 
 ## Key Findings
 
@@ -61,7 +61,7 @@ Due to the classifier being unavailable, we were unable to execute build command
 ### Probable Issues
 
 1. **Workspace Dependency Resolution**: Without a root `package.json`, the `workspace:*` dependencies will not resolve, causing installation failures.
-2. **TypeScript Configuration**: The API `tsconfig.json` (seen earlier) includes path mappings for `@aazhimin/*` pointing to `../packages/*/src`. This relies on the monorepo structure being intact.
+2. **TypeScript Configuration**: The API `tsconfig.json` (seen earlier) includes path mappings for `@fishnet/*` pointing to `../packages/*/src`. This relies on the monorepo structure being intact.
 3. **Prisma Integration**: The `prisma:generate` and `prisma:migrate` scripts are present, but require a valid `DATABASE_URL` environment variable to function.
 4. **Next.js Build**: The web build script uses `next build`, which should work if dependencies are installed and `.env` variables are set.
 5. **Testing**: The API uses Jest; tests may pass if the environment is set up correctly.

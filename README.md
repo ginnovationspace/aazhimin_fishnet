@@ -1,4 +1,4 @@
-# Aazhimin
+# fishnet
 
 A modern ecommerce marketplace for the fishing-net industry.
 

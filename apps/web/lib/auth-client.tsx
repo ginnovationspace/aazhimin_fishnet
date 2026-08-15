@@ -3,9 +3,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import apiClient from "./api";
 
-const tokenKey = "aazhimin_access_token";
-const userKey = "aazhimin_user";
-const authChangeEvent = "aazhimin-auth-change";
+const tokenKey = "fishnet_access_token";
+const userKey = "fishnet_user";
+const authChangeEvent = "fishnet-auth-change";
 
 export type AuthUser = {
   name: any;
@@ -175,7 +175,7 @@ export const signIn = async (
     window.location.href = options.callbackUrl || "/";
   }
 
-  return { ok: true, error: null, url: options.callbackUrl || "/" };
+  return { ok: true, error: null, url: options.callbackUrl || "/", user: data.user };
 };
 
 export const completeOAuthSignIn = async (accessToken: string) => {
@@ -199,6 +199,10 @@ export const completeOAuthSignIn = async (accessToken: string) => {
     user: data.user,
     accessToken,
   };
+};
+
+export const replaceClientSession = (accessToken: string, user: AuthUser) => {
+  persistSession(accessToken, user);
 };
 
 export const signOut = async (options: { callbackUrl?: string; redirect?: boolean } = {}) => {

@@ -3,8 +3,8 @@ import sgMail from '@sendgrid/mail';
 
 // Initialize SendGrid with API key from environment variables
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
-const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@aazhimin.com';
-const FROM_NAME = process.env.FROM_NAME || 'Aazhimin Fishnet';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@fishnet.com';
+const FROM_NAME = process.env.FROM_NAME || 'fishnet Fishnet';
 
 if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);
@@ -43,7 +43,7 @@ export async function createOrderUpdateNotification(
             <p><strong>Total amount:</strong> ₹${total.toFixed(2)}</p>
             <p>We'll notify you when your order ships.</p>
             <hr style="border: 1px solid #eee;">
-            <p style="font-size: 0.9em; color: #7f8c8d;">Aazhimin Fishnet</p>
+            <p style="font-size: 0.9em; color: #7f8c8d;">fishnet Fishnet</p>
           </div>
         `;
         break;
@@ -58,7 +58,7 @@ export async function createOrderUpdateNotification(
             <p><strong>Total amount:</strong> ₹${total.toFixed(2)}</p>
             <p>Our team is preparing your items for shipment.</p>
             <hr style="border: 1px solid #eee;">
-            <p style="font-size: 0.9em; color: #7f8c8d;">Aazhimin Fishnet</p>
+            <p style="font-size: 0.9em; color: #7f8c8d;">fishnet Fishnet</p>
           </div>
         `;
         break;
@@ -73,7 +73,7 @@ export async function createOrderUpdateNotification(
             <p><strong>Total amount:</strong> ₹${total.toFixed(2)}</p>
             <p>You'll receive another notification when it's delivered.</p>
             <hr style="border: 1px solid #eee;">
-            <p style="font-size: 0.9em; color: #7f8c8d;">Aazhimin Fishnet</p>
+            <p style="font-size: 0.9em; color: #7f8c8d;">fishnet Fishnet</p>
           </div>
         `;
         break;
@@ -89,7 +89,7 @@ export async function createOrderUpdateNotification(
             <p>We hope you enjoy your purchase!</p>
             <p>Please consider leaving a review for the products you received.</p>
             <hr style="border: 1px solid #eee;">
-            <p style="font-size: 0.9em; color: #7f8c8d;">Aazhimin Fishnet</p>
+            <p style="font-size: 0.9em; color: #7f8c8d;">fishnet Fishnet</p>
           </div>
         `;
         break;
@@ -104,7 +104,7 @@ export async function createOrderUpdateNotification(
             <p><strong>Total amount:</strong> ₹${total.toFixed(2)}</p>
             <p>If you have any questions, please contact our support team.</p>
             <hr style="border: 1px solid #eee;">
-            <p style="font-size: 0.9em; color: #7f8c8d;">Aazhimin Fishnet</p>
+            <p style="font-size: 0.9em; color: #7f8c8d;">fishnet Fishnet</p>
           </div>
         `;
         break;
@@ -118,7 +118,7 @@ export async function createOrderUpdateNotification(
             <p>Your order <strong>#${orderId}</strong> status has been updated to: <strong>${status}</strong>.</p>
             <p><strong>Total amount:</strong> ₹${total.toFixed(2)}</p>
             <hr style="border: 1px solid #eee;">
-            <p style="font-size: 0.9em; color: #7f8c8d;">Aazhimin Fishnet</p>
+            <p style="font-size: 0.9em; color: #7f8c8d;">fishnet Fishnet</p>
           </div>
         `;
     }

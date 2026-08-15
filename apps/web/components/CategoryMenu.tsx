@@ -1,60 +1,70 @@
-// *********************
-// Role of the component: Modern category showcase with hover effects
-// Name of the component: CategoryMenu.tsx
-// Developer: AI Assistant
-// Version: 2.0
-// Component call: <CategoryMenu />
-// Input parameters: no input parameters
-// Output: Enhanced category menu with better visual hierarchy and interactions
-// ******************* */
+"use client";
 
-import React from "react";
-import CategoryItem from "./CategoryItem";
 import Image from "next/image";
-import { categoryMenuList } from "@/lib/utils";
+import Link from "next/link";
+
+import CategoryItem from "./CategoryItem";
 import Heading from "./Heading";
+import { categoryMenuList } from "@/lib/utils";
 import { sanitize } from "@/lib/sanitize";
 
 const CategoryMenu = () => {
   return (
-    <div className="bg-white py-16">
-      <div className="max-w-screen-2xl mx-auto px-6">
-        <Heading title="Explore Fishnet Categories" />
-        <p className="text-center text-gray-600 max-w-2xl mx-auto mt-4">
-          Discover fishnets by type, material, and application
-        </p>
+    <section className="bg-white py-16">
+      <div className="mx-auto max-w-screen-2xl px-6 lg:px-8">
+        {/* Heading */}
+        <div className="text-center">
+          <Heading title="Explore Fishnet Categories" />
 
-        <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {categoryMenuList.map((item) => (
-            <CategoryItem
-              key={item.id}
-              title={sanitize(item.title)}
-              href={item.href}
-              className="group"
-            >
-              <Image
-                src={item.src}
-                width={64}
-                height={64}
-                alt={sanitize(item.title)}
-                className="mx-auto mb-4 transition-transform duration-300 group-hover:-translate-y-1"
-              />
-              <p className="text-center text-gray-700 font-medium">{sanitize(item.title)}</p>
-            </CategoryItem>
-          ))}
+          <p className="mx-auto mt-3 max-w-2xl text-gray-600">
+            Discover fishnets by type, material, and application.
+          </p>
         </div>
 
-        <div className="mt-16 text-center">
-          <a
+        {/* Categories */}
+        <div className="mt-10 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {categoryMenuList.map((item) => {
+            const title = sanitize(item.title);
+
+            return (
+              <CategoryItem
+                key={item.id}
+                title={title}
+                href={item.href}
+                className="group"
+              >
+                <div className="flex min-h-[150px] flex-col items-center justify-center">
+                  <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-50 transition-colors duration-200 group-hover:bg-blue-50">
+                    <Image
+                      src={item.src}
+                      width={64}
+                      height={64}
+                      alt={title}
+                      className="object-contain transition-transform duration-200 group-hover:-translate-y-1"
+                    />
+                  </div>
+
+                  <p className="text-sm font-semibold text-gray-800 transition-colors duration-200 group-hover:text-blue-600">
+                    {title}
+                  </p>
+                </div>
+              </CategoryItem>
+            );
+          })}
+        </div>
+
+        {/* CTA */}
+        <div className="mt-10 text-center">
+          <Link
             href="/shop"
-            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all duration-300"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-blue-700"
           >
             See All Categories
-            <span className="ml-2">→</span>
-          </a>
+            <span aria-hidden="true">→</span>
+          </Link>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

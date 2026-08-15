@@ -9,7 +9,7 @@
 
 const path = require("path");
 const { execSync } = require("child_process");
-const prisma = require("@aazhimin/database");
+const prisma = require("@fishnet/database");
 const FormData = require("form-data");
 const fs = require("fs");
 

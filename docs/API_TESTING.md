@@ -1,4 +1,4 @@
-# Aazhimin Fishnet API Testing Guide
+# fishnet Fishnet API Testing Guide
 
 ## Important: browser URL versus API request
 
@@ -239,6 +239,7 @@ Order example:
 | Method | URL | Body / parameters | Access |
 | --- | --- | --- | --- |
 | POST | `/api/seller/register` | Seller registration data | Public |
+| POST | `/api/seller/onboarding` | `{ "merchantName": "Ocean Nets", "merchantDescription": "...", "merchantPhone": "+919999999999", "merchantAddress": "Chennai" }` | Logged-in Buyer |
 | GET | `/api/seller/stats` | None | Seller/Admin |
 | GET | `/api/seller/:merchantId/status` | Merchant UUID | Logged in |
 | PUT | `/api/seller/:merchantId/documents` | `{ "verificationDocuments": [] }` | Logged in |

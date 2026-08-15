@@ -1,6 +1,6 @@
 import config from './config';
 
-const authTokenKey = "aazhimin_access_token";
+const authTokenKey = "fishnet_access_token";
 
 export const getStoredAccessToken = () => {
   if (typeof window === "undefined") {

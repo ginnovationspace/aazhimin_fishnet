@@ -1,0 +1,3 @@
+import InfoPage, { InfoSection } from "@/components/InfoPage";
+export const metadata = { title: "FAQ | Fishnet" };
+export default function FaqPage() { return <InfoPage eyebrow="FAQ" title="Frequently asked questions" intro="Answers to common Fishnet marketplace questions."><InfoSection title="How do I buy a fishnet?"><p>Browse the shop, open a product to review its details, add it to your cart, and complete checkout.</p></InfoSection><InfoSection title="How do I become a seller?"><p>Create a buyer account first, sign in, then choose Become a seller from the account menu.</p></InfoSection><InfoSection title="Where are my orders?"><p>After signing in, use My Orders from the account menu to view order status and details.</p></InfoSection></InfoPage>; }

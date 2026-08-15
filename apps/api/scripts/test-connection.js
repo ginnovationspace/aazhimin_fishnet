@@ -1,4 +1,4 @@
-const prisma = require("@aazhimin/database");
+const prisma = require("@fishnet/database");
 
 async function testConnection() {
     try {
@@ -20,7 +20,7 @@ async function testConnection() {
         console.log(`���📊 Users in database: ${userCount}`);
 
         // Test shared connection (should be the same instance)
-        const prisma2 = require("@aazhimin/database");
+        const prisma2 = require("@fishnet/database");
         console.log(`���🔗 Shared connection working: ${prisma === prisma2}`);
 
         await prisma.$disconnect();

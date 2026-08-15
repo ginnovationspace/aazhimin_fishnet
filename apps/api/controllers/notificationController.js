@@ -1,4 +1,4 @@
-const prisma = require("@aazhimin/database");
+const prisma = require("@fishnet/database");
 
 /**
  * Get notifications for a user with filtering and pagination

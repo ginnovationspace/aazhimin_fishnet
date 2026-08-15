@@ -1,5 +1,5 @@
 {
-  "name": "@aazhimin/api",
+  "name": "@fishnet/api",
   "version": "0.1.0",
   "private": true,
   "main": "dist/app.js",
@@ -21,13 +21,13 @@
     "logs:analyze": "node view-logs.js analyze"
   },
   "dependencies": {
-    "@aazhimin/auth": "workspace:*",
-    "@aazhimin/config": "workspace:*",
-    "@aazhimin/database": "workspace:*",
-    "@aazhimin/notifications": "workspace:*",
-    "@aazhimin/types": "workspace:*",
-    "@aazhimin/ui": "workspace:*",
-    "@aazhimin/validation": "workspace:*",
+    "@fishnet/auth": "workspace:*",
+    "@fishnet/config": "workspace:*",
+    "@fishnet/database": "workspace:*",
+    "@fishnet/notifications": "workspace:*",
+    "@fishnet/types": "workspace:*",
+    "@fishnet/ui": "workspace:*",
+    "@fishnet/validation": "workspace:*",
     "axios": "^1.12.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",

@@ -42,14 +42,14 @@ const Footer = () => {
     <footer className="border-t border-slate-200 bg-white">
       <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
         {/* Main footer */}
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link
               href="/"
               className="text-2xl font-bold tracking-tight text-sky-700"
             >
-              Aazhimin
+              fishnet
             </Link>
 
             <p className="mt-4 max-w-md text-sm leading-6 text-slate-600">
@@ -98,19 +98,10 @@ const Footer = () => {
             <ul className="mt-4 space-y-3">
               <li>
                 <Link
-                  href="/products"
+                  href="/shop"
                   className="text-sm text-slate-600 transition hover:text-sky-600"
                 >
                   All Fishnets
-                </Link>
-              </li>
-
-              <li>
-                <Link
-                  href="/categories"
-                  className="text-sm text-slate-600 transition hover:text-sky-600"
-                >
-                  Categories
                 </Link>
               </li>
 
@@ -122,60 +113,9 @@ const Footer = () => {
                   Cart
                 </Link>
               </li>
+              <li><Link href="/shipping" className="text-sm text-slate-600 transition hover:text-sky-600">Shipping</Link></li>
+              <li><Link href="/returns" className="text-sm text-slate-600 transition hover:text-sky-600">Returns</Link></li>
 
-              <li>
-                <Link
-                  href="/orders"
-                  className="text-sm text-slate-600 transition hover:text-sky-600"
-                >
-                  My Orders
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Sell */}
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900">
-              Sell
-            </h3>
-
-            <ul className="mt-4 space-y-3">
-              <li>
-                <Link
-                  href="/seller"
-                  className="text-sm text-slate-600 transition hover:text-sky-600"
-                >
-                  Seller Dashboard
-                </Link>
-              </li>
-
-              <li>
-                <Link
-                  href="/seller/products"
-                  className="text-sm text-slate-600 transition hover:text-sky-600"
-                >
-                  My Products
-                </Link>
-              </li>
-
-              <li>
-                <Link
-                  href="/seller/orders"
-                  className="text-sm text-slate-600 transition hover:text-sky-600"
-                >
-                  Seller Orders
-                </Link>
-              </li>
-
-              <li>
-                <Link
-                  href="/seller/products/new"
-                  className="text-sm text-slate-600 transition hover:text-sky-600"
-                >
-                  Add Fishnet
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -188,39 +128,15 @@ const Footer = () => {
             <ul className="mt-4 space-y-3">
               <li>
                 <Link
-                  href="/help"
+                  href="/support"
                   className="text-sm text-slate-600 transition hover:text-sky-600"
                 >
-                  Help Center
+                  Help centre
                 </Link>
               </li>
-
-              <li>
-                <Link
-                  href="/shipping"
-                  className="text-sm text-slate-600 transition hover:text-sky-600"
-                >
-                  Shipping
-                </Link>
-              </li>
-
-              <li>
-                <Link
-                  href="/returns"
-                  className="text-sm text-slate-600 transition hover:text-sky-600"
-                >
-                  Returns
-                </Link>
-              </li>
-
-              <li>
-                <Link
-                  href="/contact"
-                  className="text-sm text-slate-600 transition hover:text-sky-600"
-                >
-                  Contact Us
-                </Link>
-              </li>
+              <li><Link href="/faq" className="text-sm text-slate-600 transition hover:text-sky-600">FAQ</Link></li>
+              <li><Link href="/contact" className="text-sm text-slate-600 transition hover:text-sky-600">Contact</Link></li>
+              <li><Link href="/about" className="text-sm text-slate-600 transition hover:text-sky-600">About Fishnet</Link></li>
             </ul>
           </div>
         </div>
@@ -274,23 +190,12 @@ const Footer = () => {
         {/* Bottom */}
         <div className="mt-10 flex flex-col gap-4 border-t border-slate-200 pt-6 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            © {new Date().getFullYear()} Aazhimin. All rights reserved.
+            © {new Date().getFullYear()} fishnet. All rights reserved.
           </p>
 
-          <div className="flex gap-5">
-            <Link
-              href="/privacy"
-              className="transition hover:text-sky-600"
-            >
-              Privacy
-            </Link>
-
-            <Link
-              href="/terms"
-              className="transition hover:text-sky-600"
-            >
-              Terms
-            </Link>
+          <div className="mt-4 flex gap-4 text-sm text-slate-500 sm:justify-end">
+            <Link href="/privacy" className="hover:text-sky-600">Privacy</Link>
+            <Link href="/terms" className="hover:text-sky-600">Terms</Link>
           </div>
         </div>
       </div>

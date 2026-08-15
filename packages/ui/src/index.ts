@@ -1,4 +1,4 @@
-// Shared UI components for Aazhimin
+// Shared UI components for fishnet
 // Export UI components here
 
 export {}; // Placeholder

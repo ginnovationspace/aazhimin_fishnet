@@ -5,6 +5,7 @@ const { authenticate, authorize } = require('../middleware/auth');
 
 const {
   sellerRegistration,
+  becomeSeller,
   getSellerVerificationStatus,
   updateVerificationDocuments,
   updateVerificationStatus,
@@ -13,6 +14,7 @@ const {
 
 // Public endpoint for seller registration
 router.post('/register', sellerRegistration);
+router.post('/onboarding', authenticate, becomeSeller);
 
 // Protected routes (require authentication)
 // GET seller verification status

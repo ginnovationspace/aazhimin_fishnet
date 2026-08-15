@@ -1,4 +1,4 @@
-// Shared TypeScript types for Aazhimin
+// Shared TypeScript types for fishnet
 // Export common interfaces and types here
 
 export {}; // Placeholder

@@ -1,7 +1,7 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
-const prisma = require('@aazhimin/database');
+const prisma = require('@fishnet/database');
 const {
   validateRow,
   createBatchWithItems,

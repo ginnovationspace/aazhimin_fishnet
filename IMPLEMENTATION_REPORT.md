@@ -1,4 +1,4 @@
-# Aazhimin Fishnet Marketplace - UI/UX & Content Transformation Report
+# fishnet Fishnet Marketplace - UI/UX & Content Transformation Report
 
 ## Overview
 This report summarizes the work completed as part of the fishnet marketplace transformation project. The goal was to convert the generic ecommerce template into a specialized B2B/B2C fishnet marketplace with industry-specific terminology, user flows, and design elements.

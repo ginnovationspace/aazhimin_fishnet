@@ -1,5 +1,5 @@
 // Test untuk verifikasi data masuk database
-const prisma = require("@aazhimin/database");
+const prisma = require("@fishnet/database");
 
 async function checkProducts() {
   console.log("���������🔍 Checking products in database...\n");

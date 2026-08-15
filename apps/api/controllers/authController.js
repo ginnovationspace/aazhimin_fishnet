@@ -1,11 +1,11 @@
-const prisma = require("@aazhimin/database");
+const prisma = require("@fishnet/database");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const axios = require("axios");
 const { asyncHandler, AppError } = require("../middleware/errorHandler");
 const { generateToken } = require("../middleware/auth");
 
-const oauthStateCookieName = "aazhimin_google_oauth_state";
+const oauthStateCookieName = "fishnet_google_oauth_state";
 const oauthStateMaxAgeSeconds = 10 * 60;
 
 const normalizeEmail = (email) => (typeof email === "string" ? email.trim().toLowerCase() : "");

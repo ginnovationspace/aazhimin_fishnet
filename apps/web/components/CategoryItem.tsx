@@ -1,13 +1,3 @@
-// *********************
-// Role of the component: Category Item that will display category icon, category name and link to the category
-// Name of the component: CategoryItem.tsx
-// Developer: Aleksandar Kuzmanovic
-// Version: 1.0
-// Component call: <CategoryItem title={title} href={href} ><Image /></CategoryItem>
-// Input parameters: CategoryItemProps interface
-// Output: Category icon, category name and link to the category
-// *********************
-
 import Link from "next/link";
 import React, { type ReactNode } from "react";
 import { sanitize } from "@/lib/sanitize";
@@ -16,15 +6,27 @@ interface CategoryItemProps {
   children: ReactNode;
   title: string;
   href: string;
+  className?: string;
 }
 
-const CategoryItem = ({ title, children, href }: CategoryItemProps) => {
+const CategoryItem = ({
+  title,
+  children,
+  href,
+  className = "",
+}: CategoryItemProps) => {
   return (
-    <Link href={href}>
-      <div className="flex flex-col items-center gap-y-2 cursor-pointer bg-white py-5 text-black hover:bg-gray-100">
+    <Link
+      href={href}
+      aria-label={`Browse ${sanitize(title)}`}
+      className={`group block rounded-xl border border-gray-200 bg-white p-4 transition-all duration-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-md ${className}`}
+    >
+      <div className="flex min-h-[150px] flex-col items-center justify-center">
         {children}
 
-        <h3 className="font-semibold text-xl">{sanitize(title)}</h3>
+        <h3 className="mt-2 text-center text-sm font-semibold text-gray-800 transition-colors duration-200 group-hover:text-blue-600">
+          {sanitize(title)}
+        </h3>
       </div>
     </Link>
   );

@@ -1,8 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import React from "react";
+import React, { useState } from "react";
 import { FaHeart } from "react-icons/fa6";
 
 import { sanitize } from "@/lib/sanitize";
@@ -40,6 +39,12 @@ const ProductItem = ({
 }: ProductItemProps) => {
   const { wishlist, setWishlist } = useWishlistStore();
   const { addToCart } = useProductStore();
+  const initialImageSource = product.mainImage
+    ? product.mainImage.startsWith("http") || product.mainImage.startsWith("/")
+      ? product.mainImage
+      : `/${product.mainImage}`
+    : "/product_placeholder.jpg";
+  const [imageSource, setImageSource] = useState(initialImageSource);
 
   const isInWishlist = wishlist.some(
     (item) => item.id === product.id
@@ -101,16 +106,11 @@ const ProductItem = ({
           className="block h-full w-full"
           aria-label={`View ${sanitize(product.title)}`}
         >
-          <Image
-            src={
-              product.mainImage
-                ? `/${product.mainImage}`
-                : "/product_placeholder.jpg"
-            }
+          <img
+            src={imageSource}
             alt={sanitize(product.title) || "Fishnet image"}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            onError={() => setImageSource("/product_placeholder.jpg")}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         </Link>
 

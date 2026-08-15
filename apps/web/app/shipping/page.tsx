@@ -1,0 +1,3 @@
+import InfoPage, { InfoSection } from "@/components/InfoPage";
+export const metadata = { title: "Shipping Information | Fishnet" };
+export default function ShippingPage() { return <InfoPage eyebrow="Shipping" title="Shipping information" intro="Shipping cost and delivery estimates depend on the seller, product, and delivery address."><InfoSection title="Before you order"><p>Review the product listing for dispatch and delivery information. A seller may have different shipping arrangements for different products.</p></InfoSection><InfoSection title="After you order"><p>Track order progress from My Orders. Contact support with your order number if an update is needed.</p></InfoSection></InfoPage>; }

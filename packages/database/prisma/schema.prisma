@@ -1,4 +1,4 @@
-// Prisma schema for Aazhimin Fishnet Marketplace
+// Prisma schema for fishnet Fishnet Marketplace
 // PostgreSQL / Neon
 
 generator client {

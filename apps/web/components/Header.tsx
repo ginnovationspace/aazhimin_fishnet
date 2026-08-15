@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   FaBars,
   FaBell,
@@ -15,6 +15,7 @@ import {
 
 import SearchInput from "./SearchInput";
 import { sanitize } from "@/lib/sanitize";
+import { signOut, useSession } from "@/lib/auth-client";
 
 // -----------------------------------------------------------------------------
 // Types
@@ -35,21 +36,21 @@ interface HeaderUser {
 interface HeaderProps {
   categoryMenuList?: Category[];
 
-  isActive: (href: string) => boolean;
+  isActive?: (href: string) => boolean;
 
-  session: boolean;
+  session?: boolean;
 
   user?: HeaderUser | null;
 
   role?: string | null;
 
-  wishQuantity: number;
+  wishQuantity?: number;
 
-  cartQuantity: number;
+  cartQuantity?: number;
 
-  unreadCount: number;
+  unreadCount?: number;
 
-  handleLogout: () => void;
+  handleLogout?: () => void;
 }
 
 // -----------------------------------------------------------------------------
@@ -204,15 +205,27 @@ const fishnetCategories: Category[] = [
 
 const Header = ({
   categoryMenuList = [],
-  isActive,
-  session,
-  user,
-  role,
+  isActive: isActiveProp,
+  session: sessionProp,
+  user: userProp,
+  role: roleProp,
   wishQuantity,
   cartQuantity,
   unreadCount,
-  handleLogout,
-}: HeaderProps) => {
+  handleLogout: handleLogoutProp,
+}: HeaderProps = {}) => {
+  const pathname = usePathname();
+  const { data: authSession, status: authStatus } = useSession();
+  const session = sessionProp ?? authStatus === "authenticated";
+  const user = userProp ?? authSession?.user;
+  const role = roleProp ?? authSession?.user?.role;
+  const isActive = isActiveProp ?? ((href: string) => pathname === href);
+  const handleLogout = handleLogoutProp ?? (() => {
+    void signOut();
+  });
+  const resolvedWishQuantity = wishQuantity ?? 0;
+  const resolvedCartQuantity = cartQuantity ?? 0;
+  const resolvedUnreadCount = unreadCount ?? 0;
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const [fishnetMenuOpen, setFishnetMenuOpen] = useState(false);
@@ -231,7 +244,7 @@ const Header = ({
         return "/seller";
 
       case "BUYER":
-        return "/buyer";
+        return "/buyer/orders";
 
       case "ADMIN":
         return "/admin";
@@ -247,7 +260,7 @@ const Header = ({
         return "Seller Dashboard";
 
       case "BUYER":
-        return "My Account";
+        return "My Orders";
 
       case "ADMIN":
         return "Admin Dashboard";
@@ -291,19 +304,23 @@ const Header = ({
             <Link
               href="/"
               className="flex shrink-0 items-center"
-              aria-label="Aazhimin Fishnet Marketplace home"
+              aria-label="fishnet Fishnet Marketplace home"
             >
-              <Image
-                src="/logo.svg"
-                width={160}
-                height={45}
-                alt="Aazhimin Fishnet Marketplace"
-                priority
-                className="h-auto w-[135px] sm:w-[160px]"
-              />
+              <span className="text-2xl font-black tracking-tight text-sky-700 sm:text-3xl">
+                Fishnet
+              </span>
             </Link>
 
+           
+
             {/* ============================================================ */}
+            {/* CENTER SEARCH                                                 */}
+            {/* ============================================================ */}
+
+            <div className="hidden min-w-0 max-w-2xl flex-1 xl:block">
+              <SearchInput />
+            </div>
+ {/* ============================================================ */}
             {/* DESKTOP NAVIGATION                                           */}
             {/* ============================================================ */}
 
@@ -428,15 +445,6 @@ const Header = ({
                 )}
               </div>
             </nav>
-
-            {/* ============================================================ */}
-            {/* CENTER SEARCH                                                 */}
-            {/* ============================================================ */}
-
-            <div className="hidden min-w-0 max-w-xl flex-1 xl:block">
-              <SearchInput />
-            </div>
-
             {/* ============================================================ */}
             {/* DESKTOP ACTIONS                                               */}
             {/* ============================================================ */}
@@ -448,14 +456,14 @@ const Header = ({
 
               <Link
                 href="/wishlist"
-                aria-label={`Wishlist (${wishQuantity})`}
+                aria-label={`Wishlist (${resolvedWishQuantity})`}
                 className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition hover:bg-sky-50 hover:text-sky-600"
               >
                 <FaHeart className="h-5 w-5" />
 
-                {wishQuantity > 0 && (
+                {resolvedWishQuantity > 0 && (
                   <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-bold text-white">
-                    {wishQuantity > 99 ? "99+" : wishQuantity}
+                    {resolvedWishQuantity > 99 ? "99+" : resolvedWishQuantity}
                   </span>
                 )}
               </Link>
@@ -466,14 +474,14 @@ const Header = ({
 
               <Link
                 href="/cart"
-                aria-label={`Cart (${cartQuantity})`}
+                aria-label={`Cart (${resolvedCartQuantity})`}
                 className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition hover:bg-sky-50 hover:text-sky-600"
               >
                 <FaCartShopping className="h-5 w-5" />
 
-                {cartQuantity > 0 && (
+                {resolvedCartQuantity > 0 && (
                   <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-bold text-white">
-                    {cartQuantity > 99 ? "99+" : cartQuantity}
+                    {resolvedCartQuantity > 99 ? "99+" : resolvedCartQuantity}
                   </span>
                 )}
               </Link>
@@ -484,14 +492,14 @@ const Header = ({
 
               <Link
                 href="/notifications"
-                aria-label={`Notifications (${unreadCount})`}
+                aria-label={`Notifications (${resolvedUnreadCount})`}
                 className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition hover:bg-sky-50 hover:text-sky-600"
               >
                 <FaBell className="h-5 w-5" />
 
-                {unreadCount > 0 && (
+                {resolvedUnreadCount > 0 && (
                   <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                    {unreadCount > 99 ? "99+" : unreadCount}
+                    {resolvedUnreadCount > 99 ? "99+" : resolvedUnreadCount}
                   </span>
                 )}
               </Link>
@@ -561,13 +569,22 @@ const Header = ({
                       {/* Buyer Orders */}
 
                       {role === "BUYER" && (
-                        <Link
-                          href="/buyer/orders"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="block rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-sky-50 hover:text-sky-700"
-                        >
-                          My Orders
-                        </Link>
+                        <>
+                          <Link
+                            href="/buyer/orders"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="block rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-sky-50 hover:text-sky-700"
+                          >
+                            My Orders
+                          </Link>
+                          <Link
+                            href="/register-seller"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="block rounded-lg px-3 py-2 text-sm font-medium text-sky-700 transition hover:bg-sky-50"
+                          >
+                            Become a seller
+                          </Link>
+                        </>
                       )}
 
                       {/* Seller Orders */}
@@ -619,13 +636,9 @@ const Header = ({
 
             <button
               type="button"
-              onClick={() =>
-                setMobileMenuOpen((current) => !current)
-              }
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-700 transition hover:bg-sky-50 hover:text-sky-600 lg:hidden"
-              aria-label={
-                mobileMenuOpen ? "Close menu" : "Open menu"
-              }
+              onClick={() => setMobileMenuOpen((current) => !current)}
+              className="ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-700 transition hover:bg-sky-50 hover:text-sky-600 lg:hidden"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? (
@@ -633,8 +646,8 @@ const Header = ({
               ) : (
                 <FaBars className="h-5 w-5" />
               )}
-            </button>
-          </div>
+            </button>                     
+           </div>
 
           {/* ============================================================== */}
           {/* MOBILE SEARCH                                                   */}
@@ -755,9 +768,9 @@ const Header = ({
 
                 Wishlist
 
-                {wishQuantity > 0 && (
+                {resolvedWishQuantity > 0 && (
                   <span className="absolute right-2 top-2 rounded-full bg-sky-600 px-1.5 py-0.5 text-[9px] font-bold text-white">
-                    {wishQuantity > 99 ? "99+" : wishQuantity}
+                    {resolvedWishQuantity > 99 ? "99+" : resolvedWishQuantity}
                   </span>
                 )}
               </Link>
@@ -773,9 +786,9 @@ const Header = ({
 
                 Cart
 
-                {cartQuantity > 0 && (
+                {resolvedCartQuantity > 0 && (
                   <span className="absolute right-2 top-2 rounded-full bg-sky-600 px-1.5 py-0.5 text-[9px] font-bold text-white">
-                    {cartQuantity > 99 ? "99+" : cartQuantity}
+                    {resolvedCartQuantity > 99 ? "99+" : resolvedCartQuantity}
                   </span>
                 )}
               </Link>
@@ -791,9 +804,9 @@ const Header = ({
 
                 Notifications
 
-                {unreadCount > 0 && (
+                {resolvedUnreadCount > 0 && (
                   <span className="absolute right-2 top-2 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
-                    {unreadCount > 99 ? "99+" : unreadCount}
+                    {resolvedUnreadCount > 99 ? "99+" : resolvedUnreadCount}
                   </span>
                 )}
               </Link>
@@ -838,14 +851,23 @@ const Header = ({
 
                   {/* Buyer Orders */}
 
-                  {role === "BUYER" && (
-                    <Link
-                      href="/buyer/orders"
-                      onClick={closeMobileMenu}
-                      className="block rounded-lg border border-sky-200 px-4 py-3 text-center text-sm font-semibold text-sky-700 transition hover:bg-sky-50"
-                    >
-                      My Orders
-                    </Link>
+                      {role === "BUYER" && (
+                        <>
+                          <Link
+                            href="/buyer/orders"
+                            onClick={closeMobileMenu}
+                            className="block rounded-lg border border-sky-200 px-4 py-3 text-center text-sm font-semibold text-sky-700 transition hover:bg-sky-50"
+                          >
+                            My Orders
+                          </Link>
+                          <Link
+                            href="/register-seller"
+                            onClick={closeMobileMenu}
+                            className="block rounded-lg border border-sky-200 px-4 py-3 text-center text-sm font-semibold text-sky-700 transition hover:bg-sky-50"
+                          >
+                            Become a seller
+                          </Link>
+                        </>
                   )}
 
                   {/* Seller Orders */}

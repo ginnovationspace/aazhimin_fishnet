@@ -1,0 +1,3 @@
+import InfoPage, { InfoSection } from "@/components/InfoPage";
+export const metadata = { title: "About Fishnet" };
+export default function AboutPage() { return <InfoPage eyebrow="About Fishnet" title="Fishing gear made easier to find" intro="Fishnet is a marketplace focused on fishing nets and practical fishing equipment from independent sellers."><InfoSection title="What we do"><p>We help buyers compare suitable nets, materials, and mesh sizes while giving sellers a clear place to list their products.</p></InfoSection><InfoSection title="Our marketplace"><p>Product availability, dispatch times, and seller policies are shown on each product listing. Review these details before placing an order.</p></InfoSection></InfoPage>; }

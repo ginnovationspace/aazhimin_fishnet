@@ -40,7 +40,7 @@ const AdminDashboardPage = () => {
 
         <div className="w-full bg-blue-500 text-white min-h-40 flex flex-col justify-center items-center gap-y-2 px-4 text-center">
           <h4 className="text-3xl text-gray-100 max-[400px]:text-2xl">
-            Aazhimin Fishnet Marketplace Stats
+            fishnet Fishnet Marketplace Stats
           </h4>
 
           <p className="text-3xl font-bold">

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-# AAZHIMIN Foundation Repair Script
+# fishnet Foundation Repair Script
 # This script repairs the repository foundation to make it buildable with pnpm.
 
 set -e  # Exit on error
 
-echo "Starting AAZHIMIN foundation repair..."
+echo "Starting fishnet foundation repair..."
 
 # 1. Initialize git repository if not already initialized
 if [ ! -d ".git" ]; then
@@ -48,4 +48,4 @@ pnpm typecheck
 echo "Running tests..."
 pnpm test
 
-echo "AAZHIMIN foundation repair completed successfully."
+echo "fishnet foundation repair completed successfully."

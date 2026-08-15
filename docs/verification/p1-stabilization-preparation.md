@@ -8,7 +8,7 @@ Stabilize the codebase: ensure TypeScript correctness, ESLint compliance, reliab
 ### 1. TypeScript Consistency
 - Ensure all packages have valid `tsconfig.json` extending a base config if appropriate.
 - Check for any `@ts-ignore` comments and resolve them.
-- Verify that path aliases work correctly (e.g., `@aazhimin/*`).
+- Verify that path aliases work correctly (e.g., `@fishnet/*`).
 - Run `pnpm typecheck` (to be executed when possible).
 
 ### 2. ESLint Configuration
@@ -31,7 +31,7 @@ Stabilize the codebase: ensure TypeScript correctness, ESLint compliance, reliab
 - Test a simple query (e.g., find many users) via Prisma client.
 
 ### 5. Validation System
-- Audit shared validation schemas in `@aazhimin/validation`.
+- Audit shared validation schemas in `@fishnet/validation`.
 - Ensure they are used across API controllers.
 - Test validation functions with valid and invalid inputs.
 

@@ -18,6 +18,15 @@ const LoginPageContent = () => {
 
   const { data: session, status: sessionStatus } = useSession();
 
+  const getPostLoginPath = (role?: string | null) => {
+    if (role === "SELLER") return "/seller";
+    if (role === "ADMIN") return "/admin";
+    const nextPath = searchParams.get("next");
+    return nextPath?.startsWith("/") && !nextPath.startsWith("//")
+      ? nextPath
+      : "/";
+  };
+
   useEffect(() => {
     const expired = searchParams.get("expired");
 
@@ -27,9 +36,9 @@ const LoginPageContent = () => {
     }
 
     if (sessionStatus === "authenticated") {
-      router.replace("/");
+      router.replace(getPostLoginPath(session?.user?.role));
     }
-  }, [sessionStatus, router, searchParams]);
+  }, [session?.user?.role, sessionStatus, router, searchParams]);
 
   const handleSubmit = async (
     e: React.FormEvent<HTMLFormElement>
@@ -71,7 +80,7 @@ const LoginPageContent = () => {
       setError("");
       toast.success("Successful login");
 
-      router.replace("/");
+      router.replace(getPostLoginPath(res.user?.role));
       router.refresh();
     } catch (err) {
       console.error("Login error:", err);
@@ -108,7 +117,7 @@ const LoginPageContent = () => {
           </h1>
 
           <p className="mt-3 text-center text-sm text-gray-600">
-            Sign in to your Aazhimin Fishnet Marketplace account
+            Sign in to your fishnet Fishnet Marketplace account
           </p>
         </div>
 

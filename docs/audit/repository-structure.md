@@ -1,9 +1,9 @@
-# Aazhimin Repository Structure
+# fishnet Repository Structure
 
 ## Root Directory
 
 ```
-aazhimin/
+fishnet/
 |-- .eslintrc.json
 |-- .gitignore
 |-- .env.example

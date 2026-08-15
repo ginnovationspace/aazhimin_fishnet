@@ -1,4 +1,4 @@
-// Shared authentication helpers for Aazhimin
+// Shared authentication helpers for fishnet
 // Export authentication utilities here
 
 import { compare, hash } from 'bcryptjs';

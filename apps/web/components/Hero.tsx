@@ -8,7 +8,6 @@
 // Output: Modern hero component with fishing-specific messaging and call-to-action
 // *********************
 
-import Image from "next/image";
 import React from "react";
 import Link from "next/link";
 
@@ -42,18 +41,16 @@ const Hero = () => {
               href="/register-seller"
               className="flex items-center justify-center px-8 py-4 bg-white/20 text-white border border-white/20 font-semibold rounded-lg hover:bg-white/30 hover:text-blue-600 transition-all duration-300 transform hover:-translate-y-1"
             >
-              Sell on Aazhimin
+              Sell on fishnet
             </Link>
           </div>
         </div>
 
         <div className="flex-1 flex justify-center hidden md:block">
-          <Image
-            src="/fishing-net-hero.png"
+          <img
+            src="https://commons.wikimedia.org/wiki/Special:FilePath/Fishing_with_net.jpg?width=1280"
             alt="Professional fishing net in action"
-            width={500}
-            height={400}
-            className="rounded-2xl shadow-2xl border-4 border-white/20"
+            className="h-[400px] w-[500px] rounded-2xl border-4 border-white/20 object-cover shadow-2xl"
           />
         </div>
       </div>

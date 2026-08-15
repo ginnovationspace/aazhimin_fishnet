@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document audits the versions and usage of key technologies in the Aazhimin repository.
+This document audits the versions and usage of key technologies in the fishnet repository.
 
 ## Audited Technologies
 
@@ -11,15 +11,15 @@ This document audits the versions and usage of key technologies in the Aazhimin 
 | Node.js | Not explicitly specified in root package.json; apps/api and apps/web devDependencies include `@types/node@^24.3.3` suggesting compatibility with Node.js 24.x | Yes (implied by scripts) | Yes (assuming Node.js 24.x is used) | Unknown | No explicit Node.js version in package.json engines field | Add `engines` field to root package.json to specify supported Node.js version (e.g., ">=20.0.0") |
 | Package Manager | Not specified; repository uses workspaces and mentions pnpm in earlier context but no lockfile for pnpm seen; appears to use npm (package-lock.json present in apps/api) | Yes (npm inferred from package-lock.json) | Yes | Unknown | Inconsistent package manager usage (pnpm mentioned in early context but npm lockfiles present) | Standardize on one package manager (npm or pnpm) and update documentation; remove unused lockfiles |
 | Next.js | ^15.5.3 (apps/web/package.json) | Yes (frontend framework) | Yes | No (latest as of 2026-08) | None | Keep updated |
-| React | ^18.3.1 (apps/web/package.json and @aazhimin/ui) | Yes (frontend library) | Yes | No | None | Keep updated |
+| React | ^18.3.1 (apps/web/package.json and @fishnet/ui) | Yes (frontend library) | Yes | No | None | Keep updated |
 | TypeScript | ^5.9.2 (across all packages) | Yes (type-safe development) | Yes | No | None | Keep updated |
 | Tailwind CSS | ^3.3.0 (apps/web devDependencies) | Yes (styling) | Yes | Unknown | Version may be behind; latest is higher | Update to latest Tailwind CSS version |
 | @tailwindcss/forms | ^0.5.7 (apps/web) | Yes (plugin) | Yes | Unknown | None | Keep updated |
 | @tailwindcss/typography | ^0.5.10 (apps/web) | Yes (plugin) | Yes | Unknown | None | Keep updated |
 | ORM (Prisma) | @prisma/client@^6.16.1 (packages/database) | Yes (database access) | Yes | Unknown | Version may be behind; check for updates | Update to latest Prisma version |
 | PostgreSQL | Not directly specified; relies on Prisma adapter and DATABASE_URL env var | Yes (via Prisma) | Yes | N/A | None | Ensure Neon PostgreSQL compatibility with Prisma version |
-| Authentication | bcryptjs@^2.4.3, jsonwebtoken@^9.0.2 (@aazhimin/auth); next-auth@^4.24.11 (apps/web) | Yes (authentication) | Yes | Unknown | next-auth version may be behind; check compatibility with Next.js 15 | Update next-auth to version compatible with Next.js 15; consider using Next.js 15's built-in auth if applicable |
-| Validation | zod@^3.22.4 (@aazhimin/validation) | Yes (schema validation) | Yes | Unknown | None | Keep updated |
+| Authentication | bcryptjs@^2.4.3, jsonwebtoken@^9.0.2 (@fishnet/auth); next-auth@^4.24.11 (apps/web) | Yes (authentication) | Yes | Unknown | next-auth version may be behind; check compatibility with Next.js 15 | Update next-auth to version compatible with Next.js 15; consider using Next.js 15's built-in auth if applicable |
+| Validation | zod@^3.22.4 (@fishnet/validation) | Yes (schema validation) | Yes | Unknown | None | Keep updated |
 | Testing Framework | Jest@^29.0.0 (apps/api devDependencies) | Yes (backend unit tests) | Yes | Unknown | Jest 29 is behind latest; consider upgrading | Upgrade Jest to latest version; add frontend testing framework (e.g., Vitest, React Testing Library) |
 | ESLint | ^8 (across packages) | Yes (linting) | Yes | Unknown | ESLint v9 is latest; consider upgrading | Upgrade ESLint to v9 and update configurations |
 | Formatting Tools | None explicitly configured (no Prettier, etc.) | No | N/A | N/A | Missing code formatting standard | Add Prettier configuration and integrate with linting pipeline |

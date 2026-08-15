@@ -1,5 +1,5 @@
 // Test lengkap: Create product dan verify di database
-const prisma = require("@aazhimin/database");
+const prisma = require("@fishnet/database");
 
 const API_BASE_URL = "http://localhost:3001";
 

@@ -1,76 +1,86 @@
-// *********************
-// Role of the component: Brand story section with modern design
-// Name of the component: IntroducingSection.tsx
-// Developer: AI Assistant
-// Version: 2.0
-// Component call: <IntroducingSection />
-// Input parameters: no input parameters
-// Output: Modern brand storytelling section with Aazhimin's mission and values
-// *********************
-
 import Link from "next/link";
-import React from "react";
 
 const IntroducingSection = () => {
   return (
-    <div className="relative bg-white py-24">
-      {/* Decorative elements */}
-      <div className="absolute inset-0 -z-10">
-        <svg className="absolute top-0 left-0 w-40 h-40 stroke-blue-500/20" viewBox="0 0 100 100" fill="none">
-          <path d="M10,50 Q25,10 40,50 T70,50" strokeWidth="4"/>
-        </svg>
-        <svg className="absolute bottom-0 right-0 w-32 h-32 stroke-blue-400/15" viewBox="0 0 100 100" fill="none">
-          <circle cx="50" cy="50" r="40" strokeWidth="3"/>
-        </svg>
-      </div>
+    <section className="bg-white py-20">
+      <div className="mx-auto max-w-6xl px-6 lg:px-8">
+        {/* Header */}
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-blue-600">
+            About fishnet
+          </p>
 
-      <div className="relative z-10 max-w-4xl mx-auto px-6 lg:px-12">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-900 mb-6 lg:text-5xl">
-            About Aazhimin
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+            A simpler way to buy and sell fishnets
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Aazhimin is a specialized marketplace connecting fishnet manufacturers, sellers, distributors, and buyers. We simplify the process of discovering, comparing, and purchasing fishing nets by providing a platform where businesses and individuals can find the right products for their needs.
+
+          <p className="mt-5 text-lg leading-8 text-gray-600">
+            fishnet connects manufacturers, sellers, distributors, and buyers
+            in one specialized marketplace. Discover the right nets, compare
+            products, and connect with trusted sellers.
           </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 items-start">
-          {/* Our Mission */}
-          <div className="bg-blue-50 p-8 rounded-2xl border border-blue-200">
-            <h3 className="text-2xl font-semibold text-blue-600 mb-4">Our Mission</h3>
-            <p className="text-gray-700">
-              To create a trusted, efficient marketplace that connects fishnet buyers and sellers, enabling seamless transactions and supporting the fishing industry&apos;s growth.
+        {/* Values */}
+        <div className="mt-12 grid gap-6 md:grid-cols-3">
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-6">
+            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+              ✓
+            </div>
+
+            <h3 className="text-lg font-semibold text-gray-900">
+              Trusted Marketplace
+            </h3>
+
+            <p className="mt-2 text-sm leading-6 text-gray-600">
+              Connect with fishnet sellers and discover products with clear
+              specifications.
             </p>
           </div>
 
-          {/* How It Works */}
-          <div className="bg-blue-50 p-8 rounded-2xl border border-blue-200">
-            <h3 className="text-2xl font-semibold text-blue-600 mb-4">How It Works</h3>
-            <p className="text-gray-700">
-              Sellers list their fishnets with detailed specifications, buyers search and compare products, and transactions are facilitated through our secure platform. We handle the complexities so you can focus on your fishing operations.
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-6">
+            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+              ↔
+            </div>
+
+            <h3 className="text-lg font-semibold text-gray-900">
+              Easy to Compare
+            </h3>
+
+            <p className="mt-2 text-sm leading-6 text-gray-600">
+              Search, compare, and choose fishnets based on your requirements
+              without unnecessary complexity.
             </p>
           </div>
 
-          {/* Our Commitment */}
-          <div className="bg-blue-50 p-8 rounded-2xl border border-blue-200">
-            <h3 className="text-2xl font-semibold text-blue-600 mb-4">Our Commitment</h3>
-            <p className="text-gray-700">
-              We are committed to promoting sustainable fishing practices by offering eco-friendly net options and supporting responsible sellers who prioritize quality and environmental stewardship.
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-6">
+            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+              ♻
+            </div>
+
+            <h3 className="text-lg font-semibold text-gray-900">
+              Built for the Industry
+            </h3>
+
+            <p className="mt-2 text-sm leading-6 text-gray-600">
+              Supporting quality products, responsible sellers, and a more
+              sustainable fishing industry.
             </p>
           </div>
         </div>
 
-        <div className="mt-16 text-center">
+        {/* CTA */}
+        <div className="mt-10 text-center">
           <Link
             href="/about"
-            className="inline-flex items-center px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all duration-300 transform hover:-translate-y-1 shadow-lg"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 transition hover:text-blue-700"
           >
-            Our Story
-            <span className="ml-2">→</span>
+            Learn more about fishnet
+            <span aria-hidden="true">→</span>
           </Link>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

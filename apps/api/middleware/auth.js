@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { AppError } = require('./errorHandler');
-const prisma = require("@aazhimin/database");
+const prisma = require("@fishnet/database");
 
 // Secret key for JWT - in production, use environment variable
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_change_in_production';

@@ -1,4 +1,4 @@
-const prisma = require("@aazhimin/database");
+const prisma = require("@fishnet/database");
 const { AppError, asyncHandler } = require("../middleware/errorHandler");
 
 const productSelection = {

@@ -1,7 +1,55 @@
-const prisma = require("@aazhimin/database");
+const prisma = require("@fishnet/database");
 const { asyncHandler, handleServerError, AppError } = require("../middleware/errorHandler");
 const bcrypt = require('bcryptjs');
 const { nanoid } = require('nanoid');
+const { generateToken } = require('../middleware/auth');
+
+const becomeSeller = asyncHandler(async (request, response) => {
+  const { merchantName, merchantDescription, merchantPhone, merchantAddress, verificationDocuments } = request.body;
+
+  if (!merchantName || !merchantName.trim()) {
+    throw new AppError("Business name is required", 400);
+  }
+
+  const existingMerchant = await prisma.merchant.findUnique({
+    where: { userId: request.user.id }
+  });
+
+  if (existingMerchant) {
+    throw new AppError("This account already has a seller profile", 409);
+  }
+
+  const user = await prisma.user.update({
+    where: { id: request.user.id },
+    data: {
+      role: "SELLER",
+      merchant: {
+        create: {
+          name: merchantName.trim(),
+          description: merchantDescription?.trim() || null,
+          phone: merchantPhone?.trim() || null,
+          address: merchantAddress?.trim() || null,
+          verificationStatus: "APPROVED",
+          verificationDocuments: verificationDocuments || null,
+          verificationSubmittedAt: new Date(),
+          verificationReviewedAt: new Date()
+        }
+      }
+    },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      merchant: { select: { id: true, name: true, verificationStatus: true } }
+    }
+  });
+
+  return response.status(201).json({
+    message: "Seller account created successfully",
+    token: generateToken(user),
+    user
+  });
+});
 
 const sellerRegistration = asyncHandler(async (request, response) => {
   try {
@@ -54,7 +102,7 @@ const sellerRegistration = asyncHandler(async (request, response) => {
         description: merchantDescription || null,
         phone: merchantPhone || null,
         address: merchantAddress || null,
-        verificationStatus: "PENDING", // Start as pending
+        verificationStatus: "APPROVED",
         verificationDocuments: verificationDocuments || null,
       }
     });
@@ -66,7 +114,7 @@ const sellerRegistration = asyncHandler(async (request, response) => {
 
     // Return success response (without password)
     return response.status(201).json({
-      message: "Seller registration submitted successfully",
+      message: "Seller account created successfully",
       userId: user.id,
       merchantId: merchant.id,
       verificationStatus: merchant.verificationStatus
@@ -359,6 +407,7 @@ const getSellerStats = asyncHandler(async (request, response) => {
 });
 
 module.exports = {
+  becomeSeller,
   sellerRegistration,
   getSellerVerificationStatus,
   updateVerificationDocuments,

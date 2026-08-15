@@ -37,7 +37,7 @@
 ## Root Package.json (after update)
 ```json
 {
-  "name": "aazhimin",
+  "name": "fishnet",
   "version": "0.1.0",
   "private": true,
   "workspaces": [

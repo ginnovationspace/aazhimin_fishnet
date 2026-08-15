@@ -1,7 +1,7 @@
-const prisma = require("@aazhimin/database");
+const prisma = require("@fishnet/database");
 const { asyncHandler, AppError } = require("../middleware/errorHandler");
 const paymentService = require("../services/paymentService");
-const { createOrderUpdateNotification } = require("@aazhimin/notifications");
+const { createOrderUpdateNotification } = require("@fishnet/notifications");
 
 // Create a marketplace order from cart data
 const createMarketplaceOrder = asyncHandler(async (req, res) => {

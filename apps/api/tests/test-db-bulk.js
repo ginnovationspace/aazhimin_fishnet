@@ -1,4 +1,4 @@
-const prisma = require("@aazhimin/database");
+const prisma = require("@fishnet/database");
 
 async function testDatabase() {
   console.log("���������🔍 Testing database connection for bulk upload...\n");

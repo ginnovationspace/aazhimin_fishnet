@@ -1,4 +1,4 @@
-const prisma = require("@aazhimin/database");
+const prisma = require("@fishnet/database");
 const { asyncHandler } = require("../middleware/errorHandler");
 
 const getSingleProductImages = asyncHandler(async (request, response) => {

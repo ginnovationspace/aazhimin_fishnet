@@ -1,0 +1,3 @@
+import InfoPage, { InfoSection } from "@/components/InfoPage";
+export const metadata = { title: "Contact Fishnet" };
+export default function ContactPage() { return <InfoPage eyebrow="Contact" title="Contact Fishnet support" intro="For account, order, or marketplace help, include your account email and order number when available."><InfoSection title="Before contacting us"><p>Check your order details and the product page first. Never send passwords, card numbers, or one-time codes in a message.</p></InfoSection><InfoSection title="Support request"><p>Support contact details are configured by the marketplace operator. Use the support channel provided with your deployment.</p></InfoSection></InfoPage>; }

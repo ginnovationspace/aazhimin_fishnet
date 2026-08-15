@@ -4,7 +4,7 @@
  */
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const prisma = require("@aazhimin/database");
+const prisma = require("@fishnet/database");
 
 // Stripe webhook secret for verifying webhook signatures
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;

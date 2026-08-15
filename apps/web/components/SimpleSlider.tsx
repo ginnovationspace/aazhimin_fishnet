@@ -29,37 +29,36 @@ function SimpleSlider() {
         <div className="h-[500px] max-lg:h-[400px] max-md:h-[250px] max-[500px]:h-[200px] max-[400px]:h-[150px] relative">
           <div className="absolute left-[50%] translate-x-[-50%] translate-y-[30%] h-full text-center max-lg:translate-y-[25%] max-md:translate-y-[20%] max-sm:hidden">
             <p className="text-xl font-light underline underline-offset-4 mb-5 max-[1162px]:text-lg max-lg:mb-2 max-md:text-base max-md:mb-1">
-              Headphones
+              Built for the water
             </p>
             <h2 className="text-5xl font-light mb-5 max-[1162px]:text-4xl max-lg:mb-2 max-lg:text-3xl max-md:text-2xl max-md:mb-1">
-              Just to rock your mood
+              Nets for every fishing trip
             </h2>
             <p className="mb-5 text-black text-lg font-medium max-[1162px]:text-base max-lg:mb-2 max-lg:text-sm max-md:mb-1">
-              Fine-tune your listening experience by using the convenient volume
-              slider to adjust sound intensity to your preference.
+              Browse dependable fishing nets by type, material, mesh size, and use.
             </p>
             <Link href="/shop" className="bg-custom-yellow btn w-52 h-14 text-black uppercase border border-black text-xl hover:bg-black hover:text-custom-yellow max-[1162px]:w-44 max-[1162px]:h-10 max-[1162px]:text-lg max-lg:text-base max-lg:w-36 max-md:text-sm max-md:w-32">
               Shop now
             </Link>
           </div>
-          <img src="/slider image 1.webp" alt="slider 1" className="h-full" />
+          <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Fishing_with_net.jpg?width=1280" alt="Fishermen hauling a fishing net" className="h-full w-full object-cover" />
         </div>
         <div className="h-[500px] max-lg:h-[400px] max-md:h-[250px] max-[500px]:h-[200px] max-[400px]:h-[150px] relative">
           <div className="absolute left-[50%] translate-x-[-50%] translate-y-[30%] h-full text-center max-lg:translate-y-[25%] max-md:translate-y-[20%] max-sm:hidden">
             <p className="text-xl font-light underline underline-offset-4 mb-5 max-[1162px]:text-lg max-lg:mb-2 max-md:text-base max-md:mb-1">
-              Earbud
+              Find your next net
             </p>
             <h2 className="text-5xl font-light mb-5 max-[1162px]:text-4xl max-lg:mb-2 max-lg:text-3xl max-md:text-2xl max-md:mb-1">
-              Go wireless or go home
+              Compare with confidence
             </h2>
             <p className="mb-5 text-black text-lg font-medium max-[1162px]:text-base max-lg:mb-2 max-lg:text-sm max-md:mb-1">
-            Seamlessly control your sound world by sliding the volume to your perfect level.
+            Explore product details, availability, and trusted seller listings in one place.
             </p>
             <Link href="/shop" className="bg-custom-yellow btn w-52 h-14 text-black uppercase border border-black text-xl hover:bg-black hover:text-custom-yellow max-[1162px]:w-44 max-[1162px]:h-10 max-[1162px]:text-lg max-lg:text-base max-lg:w-36 max-md:text-sm max-md:w-32">
               Shop now
             </Link>
           </div>
-          <img src="/slider image 2.webp" alt="slider 1" className="h-full" />
+          <img src="https://commons.wikimedia.org/wiki/Special:FilePath/A_fishing_net.jpg?width=1280" alt="Fishing net on a river" className="h-full w-full object-cover" />
         </div>
       </Slider>
     </div>

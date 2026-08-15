@@ -1,0 +1,3 @@
+import InfoPage, { InfoSection } from "@/components/InfoPage";
+export const metadata = { title: "Returns | Fishnet" };
+export default function ReturnsPage() { return <InfoPage eyebrow="Returns" title="Returns and refunds" intro="Return eligibility depends on the product condition and the seller&apos;s stated policy."><InfoSection title="Requesting a return"><p>Start by reviewing your order and the listing details, then contact support with the order number and a clear description of the issue.</p></InfoSection><InfoSection title="Important"><p>Do not return an item until return instructions are confirmed. Keep proof of delivery and relevant product photos where applicable.</p></InfoSection></InfoPage>; }

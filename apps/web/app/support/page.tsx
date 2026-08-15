@@ -1,0 +1,4 @@
+import Link from "next/link";
+import InfoPage, { InfoSection } from "@/components/InfoPage";
+export const metadata = { title: "Support | Fishnet" };
+export default function SupportPage() { return <InfoPage eyebrow="Support" title="How can we help?" intro="Find help for orders, accounts, selling, and product questions."><InfoSection title="Buyers"><p>Sign in to view your orders. For product questions, use the details on the listing before checkout.</p></InfoSection><InfoSection title="Sellers"><p>Use the seller dashboard to manage products and fulfilment. Keep product stock and dispatch information accurate.</p></InfoSection><InfoSection title="Quick links"><p><Link className="font-semibold text-sky-700" href="/faq">Read frequently asked questions</Link> or <Link className="font-semibold text-sky-700" href="/contact">contact support</Link>.</p></InfoSection></InfoPage>; }

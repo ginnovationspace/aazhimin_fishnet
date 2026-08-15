@@ -76,9 +76,8 @@ const Products = ({
   const color = getSearchParam(searchParams?.color)
   const usage = getSearchParam(searchParams?.usage)
 
-  const category = params?.slug?.length
-    ? params.slug.join(',')
-    : ''
+  const shopPath = params?.slug ?? []
+  const [filterGroup, filterValue] = shopPath
 
   useEffect(() => {
     let isMounted = true
@@ -140,11 +139,16 @@ const Products = ({
           )
         }
 
-        if (category) {
-          queryParams.set(
-            'filters[category][$equals]',
-            category
-          )
+        if (filterGroup === 'net-type' && filterValue) {
+          queryParams.set('filters[netType][$equals]', filterValue)
+        } else if (filterGroup === 'material' && filterValue) {
+          queryParams.set('filters[material][$equals]', filterValue)
+        } else if (filterGroup === 'mesh-size' && filterValue) {
+          queryParams.set('filters[meshSize][$equals]', filterValue)
+        } else if (filterGroup === 'color' && filterValue) {
+          queryParams.set('filters[color][$equals]', filterValue)
+        } else if (filterGroup === 'usage' && filterValue) {
+          queryParams.set('filters[usage][$equals]', filterValue)
         }
 
         if (sort) {
@@ -224,7 +228,8 @@ const Products = ({
     price,
     rating,
     sort,
-    category,
+    filterGroup,
+    filterValue,
     page,
     stockMode,
     netType,

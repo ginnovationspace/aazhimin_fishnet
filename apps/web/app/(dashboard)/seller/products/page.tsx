@@ -367,7 +367,7 @@ const SellerProductsPage = () => {
 
             <p className="mx-auto mt-2 max-w-md text-gray-600">
               Add your first fishing-net product to start selling
-              on Aazhimin.
+              on fishnet.
             </p>
 
             <div className="mt-6">

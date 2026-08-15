@@ -17,25 +17,25 @@ importers:
 
   apps/api:
     dependencies:
-      '@aazhimin/auth':
+      '@fishnet/auth':
         specifier: workspace:*
         version: link:../../packages/auth
-      '@aazhimin/config':
+      '@fishnet/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@aazhimin/database':
+      '@fishnet/database':
         specifier: workspace:*
         version: link:../../packages/database
-      '@aazhimin/notifications':
+      '@fishnet/notifications':
         specifier: workspace:*
         version: link:../../packages/notifications
-      '@aazhimin/types':
+      '@fishnet/types':
         specifier: workspace:*
         version: link:../../packages/types
-      '@aazhimin/ui':
+      '@fishnet/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@aazhimin/validation':
+      '@fishnet/validation':
         specifier: workspace:*
         version: link:../../packages/validation
       axios:
@@ -117,10 +117,10 @@ importers:
 
   apps/web:
     dependencies:
-      '@aazhimin/types':
+      '@fishnet/types':
         specifier: workspace:*
         version: link:../../packages/types
-      '@aazhimin/ui':
+      '@fishnet/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@headlessui/react':

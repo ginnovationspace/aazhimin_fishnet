@@ -17,7 +17,7 @@
     }
   ],
   "env": {
-    "NEXT_PUBLIC_APP_URL": "https://aazhimin.vercel.app",
-    "API_URL": "https://aazhimin-api.vercel.app"
+    "NEXT_PUBLIC_APP_URL": "https://fishnet.vercel.app",
+    "API_URL": "https://fishnet-api.vercel.app"
   }
 }

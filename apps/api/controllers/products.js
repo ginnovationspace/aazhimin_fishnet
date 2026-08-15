@@ -1,4 +1,4 @@
-const prisma = require("@aazhimin/database");
+const prisma = require("@fishnet/database");
 const { asyncHandler, handleServerError, AppError } = require("../middleware/errorHandler");
 
 // Security: Define whitelists for allowed filter types and operators

@@ -127,7 +127,7 @@ const RegisterPage = () => {
           </h2>
 
           <p className="mt-2 text-center text-sm text-gray-500">
-            Create your Aazhimin Fishnet Marketplace account
+            Create your fishnet Fishnet Marketplace account
           </p>
         </div>
 
