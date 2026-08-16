@@ -2,9 +2,10 @@ const morgan = require('morgan');
 const fs = require('fs');
 const path = require('path');
 
-// Create logs directory if it doesn't exist
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 const logsDir = path.join(__dirname, '..', 'logs');
-if (!fs.existsSync(logsDir)) {
+
+if (!isServerless && !fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir, { recursive: true });
   console.log('Created logs directory:', logsDir);
 }
@@ -16,15 +17,13 @@ morgan.token('userId', (req) => req.user?.id || 'anonymous');
 // Create a simple log format
 const logFormat = ':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" reqId=:reqId userId=:userId';
 
-// Create write stream for combined logs
-const accessLogStream = fs.createWriteStream(
-  path.join(logsDir, 'access.log'), 
+const accessLogStream = isServerless ? process.stdout : fs.createWriteStream(
+  path.join(logsDir, 'access.log'),
   { flags: 'a' }
 );
 
-// Create write stream for error logs
-const errorLogStream = fs.createWriteStream(
-  path.join(logsDir, 'error.log'), 
+const errorLogStream = isServerless ? process.stderr : fs.createWriteStream(
+  path.join(logsDir, 'error.log'),
   { flags: 'a' }
 );
 
@@ -83,10 +82,11 @@ const securityLogger = (req, res, next) => {
         pattern: pattern.source
       };
       
-      fs.appendFileSync(
-        path.join(logsDir, 'security.log'), 
-        JSON.stringify(logEntry) + '\n'
-      );
+      if (isServerless) {
+        console.warn(JSON.stringify(logEntry));
+      } else {
+        fs.appendFileSync(path.join(logsDir, 'security.log'), JSON.stringify(logEntry) + '\n');
+      }
     }
   }
   

@@ -14,6 +14,12 @@ export const apiClient = {
   baseUrl: config.apiBaseUrl,
   
   async request(endpoint: string, options: RequestInit = {}) {
+    if (!this.baseUrl) {
+      throw new Error(
+        "The API is not configured. Set NEXT_PUBLIC_API_BASE_URL in the web Vercel project and redeploy."
+      );
+    }
+
     const url = `${this.baseUrl}${endpoint}`;
     const { headers: _headers, ...requestOptions } = options;
     const token = getStoredAccessToken();

@@ -3,7 +3,29 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**"],
+      "env": [
+        "DATABASE_URL",
+        "JWT_SECRET",
+        "FRONTEND_URL",
+        "API_PUBLIC_URL",
+        "OAUTH_STATE_SECRET",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "GOOGLE_OAUTH_REDIRECT_URI",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+        "NEXTAUTH_URL",
+        "AUTH_SECRET",
+        "STORAGE_ENDPOINT",
+        "STORAGE_ACCESS_KEY",
+        "STORAGE_SECRET_KEY",
+        "STORAGE_BUCKET",
+        "PAYMENT_SECRET_KEY",
+        "NEXT_PUBLIC_API_BASE_URL",
+        "NEXT_PUBLIC_APP_URL",
+        "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"
+      ]
     },
     "dev": {
       "cache": false

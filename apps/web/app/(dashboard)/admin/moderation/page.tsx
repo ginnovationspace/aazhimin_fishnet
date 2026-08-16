@@ -1,6 +1,6 @@
 "use client";
 
-import { SectionTitle } from "@/components";
+import { DashboardSidebar, SectionTitle } from "@/components";
 import { useSession } from "@/lib/auth-client";
 import { useCallback, useEffect, useState } from "react";
 import apiClient from "@/lib/api";
@@ -715,13 +715,15 @@ const AdminModerationPage = () => {
    */
 
   return (
-    <div className="bg-white">
-      <SectionTitle
-        title="Content Moderation"
-        path="Home | Dashboard | Admin | Moderation"
-      />
+    <div className="min-h-screen bg-white lg:flex">
+      <DashboardSidebar />
+      <div className="min-w-0 flex-1">
+        <SectionTitle
+          title="Content Moderation"
+          path="Home | Dashboard | Admin | Moderation"
+        />
 
-      <div className="mx-auto max-w-7xl px-4 pb-24 pt-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 pb-24 pt-16 sm:px-6 lg:px-8">
         {/* Header */}
 
         <div className="mb-8">
@@ -1609,6 +1611,7 @@ const AdminModerationPage = () => {
             )}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

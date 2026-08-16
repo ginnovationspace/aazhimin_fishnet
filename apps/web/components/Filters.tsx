@@ -28,7 +28,7 @@ const Filters = () => {
   const [inputCategory, setInputCategory] = useState<InputCategory>({
     inStock: { text: "In Stock", isChecked: true },
     outOfStock: { text: "Out of Stock", isChecked: true },
-    priceFilter: { text: "Maximum Price", value: 1000 },
+    priceFilter: { text: "Maximum Price", value: 2000 },
     ratingFilter: { text: "Minimum Rating", value: 0 },
     // Fishnet-specific filters
     netTypeFilter: { text: "Net Type", value: "" },
@@ -154,7 +154,9 @@ const Filters = () => {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-500">$0</span>
-            <span className="text-sm text-gray-500">${inputCategory.priceFilter.value}</span>
+            <span className="text-sm text-gray-500">
+              Up to ${inputCategory.priceFilter.value.toLocaleString()}
+            </span>
           </div>
           <input
             type="range"
@@ -174,27 +176,9 @@ const Filters = () => {
             }
             className="w-full"
           />
-          <div className="flex justify-between text-xs mt-1">
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
             <span>$0</span>
-            <span>$50</span>
-            <span>$100</span>
-            <span>$150</span>
-            <span>$200</span>
-            <span>$250</span>
-            <span>$300</span>
-            <span>$350</span>
-            <span>$400</span>
-            <span>$450</span>
             <span>$500</span>
-            <span>$550</span>
-            <span>$600</span>
-            <span>$650</span>
-            <span>$700</span>
-            <span>$750</span>
-            <span>$800</span>
-            <span>$850</span>
-            <span>$900</span>
-            <span>$950</span>
             <span>$1000</span>
             <span>$1500</span>
             <span>$2000</span>
