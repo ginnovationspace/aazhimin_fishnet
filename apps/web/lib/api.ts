@@ -31,7 +31,11 @@ export const apiClient = {
       headers,
     };
     
-    return fetch(url, { ...requestOptions, ...defaultOptions });
+    return fetch(url, {
+      ...requestOptions,
+      ...defaultOptions,
+      signal: options.signal ?? AbortSignal.timeout(15000),
+    });
   },
   
   // Convenience methods
@@ -49,7 +53,7 @@ export const apiClient = {
     apiClient.request(endpoint, {
       ...options,
       method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
+      body: data instanceof FormData ? data : data ? JSON.stringify(data) : undefined,
     }),
     
   delete: (endpoint: string, options?: RequestInit) =>

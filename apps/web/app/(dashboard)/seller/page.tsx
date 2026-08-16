@@ -31,16 +31,16 @@ const SellerDashboardPage = () => {
     if (status === "loading") return;
 
     if (status === "unauthenticated") {
-      router.replace("/login");
+      window.location.replace("/login");
       return;
     }
 
     if (session?.user?.role === "ADMIN") {
-      router.replace("/admin");
+      window.location.replace("/admin");
     } else if (session?.user?.role !== "SELLER") {
-      router.replace("/");
+      window.location.replace("/");
     }
-  }, [router, session?.user?.role, status]);
+  }, [session?.user?.role, status]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -53,10 +53,13 @@ const SellerDashboardPage = () => {
 
       try {
         const statsResponse = await apiClient.get(`/api/seller/stats`);
-        if (statsResponse.ok) {
-          const statsData = await statsResponse.json();
-          setStats(statsData);
+        if (!statsResponse.ok) {
+          const data = await statsResponse.json().catch(() => null);
+          throw new Error(data?.error || `Unable to load dashboard data (${statsResponse.status}).`);
         }
+
+        const statsData = await statsResponse.json();
+        setStats(statsData);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
         setError("Failed to load dashboard data");

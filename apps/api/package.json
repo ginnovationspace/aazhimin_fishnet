@@ -14,6 +14,8 @@
     "prisma:studio": "prisma studio",
     "db:backup": "node scripts/backup-database.js",
     "db:restore": "node scripts/restore-database.js",
+    "db:seed-categories": "node scripts/seed-fishnet-categories.js",
+    "db:seed-demo": "node scripts/seed-demo-marketplace.js",
     "logs": "node view-logs.js",
     "logs:access": "node view-logs.js access",
     "logs:error": "node view-logs.js error",

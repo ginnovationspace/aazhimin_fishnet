@@ -355,18 +355,31 @@ const createProduct = asyncHandler(async (request, response) => {
     throw new AppError("Missing required field: categoryId", 400);
   }
 
+  const normalizedPrice = Number(price);
+  const normalizedStock = typeof inStock === "boolean"
+    ? (inStock ? 1 : 0)
+    : Number(inStock ?? 0);
+
+  if (!Number.isFinite(normalizedPrice) || normalizedPrice < 0) {
+    throw new AppError("Price must be a valid non-negative number", 400);
+  }
+
+  if (!Number.isFinite(normalizedStock) || normalizedStock < 0) {
+    throw new AppError("Stock must be a valid non-negative number", 400);
+  }
+
   const product = await prisma.product.create({
     data: {
       merchantId: merchant.id, // Use authenticated user's merchantId
       slug,
       title,
-      mainImage,
-      price,
+      mainImage: mainImage || "product_placeholder.jpg",
+      price: Math.round(normalizedPrice),
       rating: 5,
-      description,
-      manufacturer,
+      description: description || "",
+      manufacturer: manufacturer || "",
       categoryId,
-      inStock,
+      inStock: Math.floor(normalizedStock),
       netType,
       meshSize,
       netLength,

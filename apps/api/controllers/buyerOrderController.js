@@ -25,6 +25,12 @@ const getBuyerOrders = asyncHandler(async (req, res) => {
     include: {
       sellerOrders: {
         include: {
+          merchant: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
           orderItems: {
             include: {
               product: {
@@ -107,6 +113,12 @@ const getBuyerOrderById = asyncHandler(async (req, res) => {
     include: {
       sellerOrders: {
         include: {
+          merchant: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
           orderItems: {
             include: {
               product: {

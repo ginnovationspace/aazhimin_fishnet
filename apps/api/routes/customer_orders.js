@@ -1,6 +1,7 @@
 const express = require('express');
 /** @type {import('express').Router} */
 const router = express.Router();
+const { authenticate, authorize } = require("../middleware/auth");
 
 const {
     getCustomerOrder,
@@ -10,8 +11,10 @@ const {
     getAllOrders 
   } = require('../controllers/customer_orders');
 
+  router.use(authenticate);
+
   router.route('/')
-  .get(getAllOrders)
+  .get(authorize("ADMIN"), getAllOrders)
   .post(createCustomerOrder);
 
   router.route('/:id')

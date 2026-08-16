@@ -2,7 +2,7 @@ const prisma = require("@fishnet/database");
 const { asyncHandler, AppError } = require("../middleware/errorHandler");
 
 const searchProducts = asyncHandler(async (request, response) => {
-    const { query } = request.query;
+    const query = request.query.query || request.query.q;
     if (!query) {
         throw new AppError("Query parameter is required", 400);
     }
@@ -64,7 +64,7 @@ const searchProducts = asyncHandler(async (request, response) => {
 
 // New endpoint for search suggestions
 const getSearchSuggestions = asyncHandler(async (request, response) => {
-    const { query } = request.query;
+    const query = request.query.query || request.query.q;
     if (!query || query.length < 2) {
         return response.json({ suggestions: [] });
     }

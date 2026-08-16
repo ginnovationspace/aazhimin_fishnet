@@ -5,13 +5,12 @@ import config from "@/lib/config";
 import { isValidEmailAddressFormat } from "@/lib/utils";
 import { signIn, useSession } from "@/lib/auth-client";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { FcGoogle } from "react-icons/fc";
 
 const LoginPageContent = () => {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [error, setError] = useState("");
@@ -36,9 +35,9 @@ const LoginPageContent = () => {
     }
 
     if (sessionStatus === "authenticated") {
-      router.replace(getPostLoginPath(session?.user?.role));
+      window.location.replace(getPostLoginPath(session?.user?.role));
     }
-  }, [session?.user?.role, sessionStatus, router, searchParams]);
+  }, [session?.user?.role, sessionStatus, searchParams]);
 
   const handleSubmit = async (
     e: React.FormEvent<HTMLFormElement>
@@ -79,9 +78,7 @@ const LoginPageContent = () => {
 
       setError("");
       toast.success("Successful login");
-
-      router.replace(getPostLoginPath(res.user?.role));
-      router.refresh();
+      window.location.assign(getPostLoginPath(res.user?.role));
     } catch (err) {
       console.error("Login error:", err);
 
@@ -97,14 +94,6 @@ const LoginPageContent = () => {
 
     window.location.assign(`${config.apiBaseUrl}/api/auth/oauth/google/start?${params.toString()}`);
   };
-
-  if (sessionStatus === "loading") {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <p className="text-sm text-gray-600">Loading...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-white">

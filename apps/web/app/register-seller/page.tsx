@@ -80,7 +80,7 @@ const RegisterSellerPage = () => {
           "Seller account created successfully!"
         );
 
-        router.push("/seller");
+        window.location.assign("/seller");
         return;
       }
 

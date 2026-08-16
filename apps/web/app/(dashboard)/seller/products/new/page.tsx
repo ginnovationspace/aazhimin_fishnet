@@ -66,16 +66,6 @@ const INITIAL_FORM_DATA: ProductFormData = {
   shippingInformation: "",
 };
 
-const CATEGORIES: Category[] = [
-  { id: "1", name: "Fishing Nets" },
-  { id: "2", name: "Fishing Lines" },
-  { id: "3", name: "Fishing Hooks" },
-  { id: "4", name: "Fishing Rods" },
-  { id: "5", name: "Fishing Reels" },
-  { id: "6", name: "Fishing Lures" },
-  { id: "7", name: "Fishing Tackle" },
-];
-
 const AddProductPage = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -130,15 +120,37 @@ const AddProductPage = () => {
 
 
 
-  /**
-   * Fetch categories.
-   *
-   * Currently using the project's placeholder categories.
-   * Replace this with an API request once the category endpoint
-   * is available.
-   */
   useEffect(() => {
-    setCategories(CATEGORIES);
+    let cancelled = false;
+
+    const loadCategories = async () => {
+      try {
+        const response = await apiClient.get("/api/categories");
+        const data = await response.json().catch(() => []);
+
+        if (!response.ok) {
+          throw new Error(data?.error || "Unable to load product categories.");
+        }
+
+        if (!cancelled) {
+          setCategories(Array.isArray(data) ? data : []);
+        }
+      } catch (categoryError) {
+        if (!cancelled) {
+          const message = categoryError instanceof Error
+            ? categoryError.message
+            : "Unable to load product categories.";
+          setError(message);
+          showToast("Categories unavailable", message);
+        }
+      }
+    };
+
+    void loadCategories();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   /**

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import 'svgmap/style.min';
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import AppChrome from "@/components/AppChrome";
 import Providers from "@/Providers";
 import SessionTimeoutWrapper from "@/components/SessionTimeoutWrapper";
 
@@ -21,9 +20,7 @@ export default async function RootLayout({
       <body>
         <Providers>
           <SessionTimeoutWrapper />
-          <Header />
-          {children}
-          <Footer />
+          <AppChrome>{children}</AppChrome>
         </Providers>
       </body>
     </html>

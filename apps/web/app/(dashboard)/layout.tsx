@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 
 export default function Layout({
@@ -10,15 +9,14 @@ export default function Layout({
   children: React.ReactNode;
 }>) {
   const { status } = useSession();
-  const router = useRouter();
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.replace("/login");
+      window.location.replace("/login");
     }
-  }, [router, status]);
+  }, [status]);
 
-  if (status === "loading" || status === "unauthenticated") {
+  if (status === "unauthenticated") {
     return null;
   }
 

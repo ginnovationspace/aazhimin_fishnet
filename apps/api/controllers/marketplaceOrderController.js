@@ -18,7 +18,6 @@ const createMarketplaceOrder = asyncHandler(async (req, res) => {
     country,
     orderNotice,
     totalAmount,
-    userId, // Optional: if the user is logged in
     cartItems, // Array of cart items from the frontend
     paymentMethodId, // Stripe payment method ID (for card payments)
     paymentMethod // NEW: 'upi' or 'card'
@@ -49,28 +48,7 @@ const createMarketplaceOrder = asyncHandler(async (req, res) => {
     throw new AppError("Invalid payment method", 400);
   }
 
-  // Determine user ID: if authenticated, use token user ID; otherwise find/create a buyer by email.
-  let finalUserId = null;
-  if (req.user) {
-    // Authenticated user - use ID from token, ignore any userId in body for security
-    finalUserId = req.user.id;
-  } else if (userId) {
-    const providedUser = await prisma.user.findUnique({ where: { id: userId } });
-    finalUserId = providedUser?.id || null;
-  }
-
-  if (!finalUserId) {
-    const normalizedEmail = email.trim().toLowerCase();
-    const user = await prisma.user.upsert({
-      where: { email: normalizedEmail },
-      update: {},
-      create: {
-        email: normalizedEmail,
-        role: "BUYER",
-      },
-    });
-    finalUserId = user.id;
-  }
+  const finalUserId = req.user.id;
 
   // Validate each cart item
   for (const item of cartItems) {
@@ -90,6 +68,16 @@ const createMarketplaceOrder = asyncHandler(async (req, res) => {
     }
   }
 
+  const pricedProducts = await prisma.product.findMany({
+    where: { id: { in: cartItems.map((item) => item.productId) } },
+    select: { id: true, price: true },
+  });
+  const priceByProductId = new Map(pricedProducts.map((product) => [product.id, product.price]));
+  const serverTotalAmount = cartItems.reduce(
+    (sum, item) => sum + Number(priceByProductId.get(item.productId)) * Number(item.quantity),
+    0
+  );
+
   // Start a transaction to create the marketplace order, seller orders, order items, and payment
   const result = await prisma.$transaction(async (tx) => {
     // 1. Create the marketplace order
@@ -97,7 +85,7 @@ const createMarketplaceOrder = asyncHandler(async (req, res) => {
       data: {
         userId: finalUserId, // Authenticated user ID or guest user ID (if provided)
         status: "ORDER_PLACED",
-        totalAmount: parseInt(totalAmount), // Ensure it's an integer
+        totalAmount: Math.round(serverTotalAmount),
         buyerName: name,
         buyerLastname: lastname,
         buyerPhone: phone,
@@ -185,7 +173,7 @@ const createMarketplaceOrder = asyncHandler(async (req, res) => {
     // 4. Update marketplace order total with the sum of seller order totals (should match)
     // We already calculated totalAmount from the frontend, but we can verify
     const calculatedTotal = sellerOrders.reduce((sum, order) => sum + order.totalAmount, 0);
-    if (Math.abs(calculatedTotal - totalAmount) > 0.01) {
+    if (Math.abs(calculatedTotal - serverTotalAmount) > 0.01) {
       // Log a warning but don't fail - frontend total might have rounding differences
       console.warn(`Marketplace order total mismatch: frontend ${totalAmount}, calculated ${calculatedTotal}`);
     }
@@ -193,7 +181,7 @@ const createMarketplaceOrder = asyncHandler(async (req, res) => {
     // 5. Create a payment intent with Stripe
     const paymentResult = await paymentService.createPaymentIntent({
       marketplaceOrderId: marketplaceOrder.id,
-      amount: parseInt(totalAmount),
+      amount: Math.round(serverTotalAmount),
       currency: "INR", // Default to INR, could be made configurable
       paymentMethodId: paymentMethodId,
       paymentMethodTypes: paymentMethodTypes

@@ -2,61 +2,61 @@ export const categoryMenuList = [
   {
     id: 1,
     title: "Gill Nets",
-    src: "/icons/gill-net.png",
+    src: "/randomProductImage.svg",
     href: "/shop/gill-nets"
   },
   {
     id: 2,
     title: "Cast Nets",
-    src: "/icons/cast-net.png",
+    src: "/randomProductImage.svg",
     href: "/shop/cast-nets"
   },
   {
     id: 3,
     title: "Seine Nets",
-    src: "/icons/seine-net.png",
+    src: "/randomProductImage.svg",
     href: "/shop/seine-nets"
   },
   {
     id: 4,
     title: "Trawl Nets",
-    src: "/icons/trawl-net.png",
+    src: "/randomProductImage.svg",
     href: "/shop/trawl-nets"
   },
   {
     id: 5,
     title: "Fishing Lines",
-    src: "/icons/fishing-line.png",
+    src: "/randomProductImage.svg",
     href: "/shop/fishing-lines"
   },
   {
     id: 6,
     title: "Nylon Nets",
-    src: "/icons/nylon-net.png",
+    src: "/randomProductImage.svg",
     href: "/shop/nylon-nets"
   },
   {
     id: 7,
     title: "HDPE Nets",
-    src: "/icons/hdpe-net.png",
+    src: "/randomProductImage.svg",
     href: "/shop/hdpe-nets"
   },
   {
     id: 8,
     title: "Monofilament Nets",
-    src: "/icons/monofilament-net.png",
+    src: "/randomProductImage.svg",
     href: "/shop/monofilament-nets"
   },
   {
     id: 9,
     title: "Multifilament Nets",
-    src: "/icons/multifilament-net.png",
+    src: "/randomProductImage.svg",
     href: "/shop/multifilament-nets"
   },
   {
     id: 10,
     title: "Custom Nets",
-    src: "/icons/custom-net.png",
+    src: "/randomProductImage.svg",
     href: "/shop/custom-nets"
   },
 ];

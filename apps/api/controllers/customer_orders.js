@@ -40,29 +40,6 @@ const toLegacyOrder = (order) => ({
   dateTime: order.placedAt,
 });
 
-const findOrCreateBuyer = async (email) => {
-  const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
-
-  if (!normalizedEmail) {
-    throw new AppError("Email is required", 400);
-  }
-
-  const existingUser = await prisma.user.findUnique({
-    where: { email: normalizedEmail },
-  });
-
-  if (existingUser) {
-    return existingUser;
-  }
-
-  return prisma.user.create({
-    data: {
-      email: normalizedEmail,
-      role: "BUYER",
-    },
-  });
-};
-
 const resolveCartItems = (body) => {
   const products = Array.isArray(body.products) ? body.products : [];
 
@@ -106,7 +83,14 @@ const createCustomerOrder = asyncHandler(async (request, response) => {
     }
   }
 
-  const user = await findOrCreateBuyer(email);
+  const user = await prisma.user.findUnique({
+    where: { id: request.user.id },
+    select: { id: true, email: true },
+  });
+
+  if (!user) {
+    throw new AppError("Authenticated user not found", 401);
+  }
   const productIds = cartItems.map((item) => item.productId);
   const products = await prisma.product.findMany({
     where: { id: { in: productIds } },
@@ -118,7 +102,10 @@ const createCustomerOrder = asyncHandler(async (request, response) => {
     throw new AppError("One or more products were not found", 404);
   }
 
-  const totalAmount = Math.round(Number(total || 0));
+  const totalAmount = cartItems.reduce((sum, item) => {
+    const product = productMap.get(item.productId);
+    return sum + Number(product.price) * item.quantity;
+  }, 0);
 
   const order = await prisma.$transaction(async (tx) => {
     const marketplaceOrder = await tx.marketplaceOrder.create({
@@ -129,7 +116,7 @@ const createCustomerOrder = asyncHandler(async (request, response) => {
         buyerName: name,
         buyerLastname: lastname,
         buyerPhone: phone,
-        buyerEmail: email.trim().toLowerCase(),
+        buyerEmail: user.email,
         buyerCompany: company || null,
         buyerAddress: adress,
         buyerApartment: apartment || null,
@@ -146,7 +133,7 @@ const createCustomerOrder = asyncHandler(async (request, response) => {
       const merchantItems = itemsByMerchant.get(product.merchantId) || [];
       merchantItems.push({
         ...item,
-        price: item.price || product.price,
+        price: product.price,
       });
       itemsByMerchant.set(product.merchantId, merchantItems);
     }
@@ -203,6 +190,10 @@ const updateCustomerOrder = asyncHandler(async (request, response) => {
     throw new AppError("Order not found", 404);
   }
 
+  if (order.userId !== request.user.id && request.user.role !== "ADMIN") {
+    throw new AppError("Unauthorized to update this order", 403);
+  }
+
   const updatedOrder = await prisma.marketplaceOrder.update({
     where: { id },
     data: {
@@ -240,6 +231,10 @@ const deleteCustomerOrder = asyncHandler(async (request, response) => {
     throw new AppError("Order not found", 404);
   }
 
+  if (order.userId !== request.user.id && request.user.role !== "ADMIN") {
+    throw new AppError("Unauthorized to delete this order", 403);
+  }
+
   await prisma.marketplaceOrder.delete({
     where: { id },
   });
@@ -260,6 +255,10 @@ const getCustomerOrder = asyncHandler(async (request, response) => {
 
   if (!order) {
     throw new AppError("Order not found", 404);
+  }
+
+  if (order.userId !== request.user.id && request.user.role !== "ADMIN") {
+    throw new AppError("Unauthorized to access this order", 403);
   }
 
   response.status(200).json(toLegacyOrder(order));

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   FaBars,
@@ -15,7 +15,7 @@ import {
 
 import SearchInput from "./SearchInput";
 import { sanitize } from "@/lib/sanitize";
-import { signOut, useSession } from "@/lib/auth-client";
+import { getClientSession, signOut, useSession, type AuthSession } from "@/lib/auth-client";
 
 // -----------------------------------------------------------------------------
 // Types
@@ -216,9 +216,25 @@ const Header = ({
 }: HeaderProps = {}) => {
   const pathname = usePathname();
   const { data: authSession, status: authStatus } = useSession();
-  const session = sessionProp ?? authStatus === "authenticated";
-  const user = userProp ?? authSession?.user;
-  const role = roleProp ?? authSession?.user?.role;
+  const [storedSession, setStoredSession] = useState<AuthSession | null>(null);
+
+  useEffect(() => {
+    const syncStoredSession = () => setStoredSession(getClientSession());
+
+    syncStoredSession();
+    window.addEventListener("fishnet-auth-change", syncStoredSession);
+    window.addEventListener("storage", syncStoredSession);
+
+    return () => {
+      window.removeEventListener("fishnet-auth-change", syncStoredSession);
+      window.removeEventListener("storage", syncStoredSession);
+    };
+  }, []);
+
+  const activeSession = authSession ?? storedSession;
+  const session = sessionProp ?? (authStatus === "authenticated" || Boolean(activeSession));
+  const user = userProp ?? activeSession?.user;
+  const role = roleProp ?? activeSession?.user?.role;
   const isActive = isActiveProp ?? ((href: string) => pathname === href);
   const handleLogout = handleLogoutProp ?? (() => {
     void signOut();
