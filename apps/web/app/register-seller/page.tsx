@@ -7,6 +7,9 @@ import { replaceClientSession, useSession } from "@/lib/auth-client";
 import toast from "react-hot-toast";
 
 interface SellerFormData {
+  email: string;
+  password: string;
+  confirmPassword: string;
   merchantName: string;
   merchantDescription: string;
   merchantPhone: string;
@@ -18,6 +21,9 @@ const RegisterSellerPage = () => {
   const { data: session, status } = useSession();
 
   const [formData, setFormData] = useState<SellerFormData>({
+    email: "",
+    password: "",
+    confirmPassword: "",
     merchantName: "",
     merchantDescription: "",
     merchantPhone: "",
@@ -27,10 +33,6 @@ const RegisterSellerPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.replace("/login?next=/register-seller");
-    }
-
     if (session?.user?.role === "SELLER") {
       router.replace("/seller");
     }
@@ -53,25 +55,41 @@ const RegisterSellerPage = () => {
       return;
     }
 
-    // Basic validation
-    if (
-      !formData.merchantName
-    ) {
-      toast.error(
-        "Business name is required"
-      );
+    if (!formData.merchantName.trim()) {
+      toast.error("Business name is required");
       return;
+    }
+
+    if (status === "unauthenticated") {
+      if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+        toast.error("Enter a valid email address");
+        return;
+      }
+      if (formData.password.length < 8) {
+        toast.error("Password must be at least 8 characters long");
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        toast.error("Passwords do not match");
+        return;
+      }
     }
 
     setIsSubmitting(true);
 
     try {
-      const response = await apiClient.post("/api/seller/onboarding", {
+      const sellerDetails = {
         merchantName: formData.merchantName.trim(),
         merchantDescription: formData.merchantDescription.trim(),
         merchantPhone: formData.merchantPhone.trim(),
         merchantAddress: formData.merchantAddress.trim(),
-      });
+      };
+      const response = await apiClient.post(
+        status === "authenticated" ? "/api/seller/onboarding" : "/api/seller/register",
+        status === "authenticated"
+          ? sellerDetails
+          : { ...sellerDetails, email: formData.email.trim(), password: formData.password }
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -110,10 +128,10 @@ const RegisterSellerPage = () => {
           </h1>
 
           <p className="mt-4 max-w-3xl text-lg text-gray-600">
-            Add a seller profile to your existing fishnet account and start managing your fishnet listings.
+            Create your seller account and store profile, then start adding products immediately.
           </p>
 
-          {status === "authenticated" && session?.user?.email && (
+        {status === "authenticated" && session?.user?.email && (
             <p className="mt-3 text-sm text-sky-700">
               Applying as {session.user.email}
             </p>
@@ -124,10 +142,31 @@ const RegisterSellerPage = () => {
           <p className="text-sm text-gray-600">Checking your account...</p>
         )}
 
-        {status === "authenticated" && session?.user?.role === "BUYER" && <form
+        {status !== "loading" && (status === "unauthenticated" || session?.user?.role === "BUYER") && <form
           className="space-y-8"
           onSubmit={handleSubmit}
         >
+          {status === "unauthenticated" && (
+            <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="text-xl font-semibold text-gray-900">Seller account access</h2>
+              <p className="mt-1 text-sm text-gray-500">This creates a seller account, not a buyer account.</p>
+              <div className="mt-6 grid gap-6 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-700">Email address *</label>
+                  <input id="email" type="email" autoComplete="email" required value={formData.email} onChange={(e) => handleChange("email", e.target.value)} disabled={isSubmitting} className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 sm:text-sm" />
+                </div>
+                <div>
+                  <label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-700">Password *</label>
+                  <input id="password" type="password" autoComplete="new-password" required minLength={8} value={formData.password} onChange={(e) => handleChange("password", e.target.value)} disabled={isSubmitting} className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 sm:text-sm" />
+                </div>
+                <div>
+                  <label htmlFor="confirmPassword" className="mb-2 block text-sm font-medium text-gray-700">Confirm password *</label>
+                  <input id="confirmPassword" type="password" autoComplete="new-password" required minLength={8} value={formData.confirmPassword} onChange={(e) => handleChange("confirmPassword", e.target.value)} disabled={isSubmitting} className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 sm:text-sm" />
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* Merchant Information */}
           <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-semibold text-gray-900">

@@ -83,7 +83,12 @@ const RegisterPage = () => {
         setError("");
         toast.success("Registration successful");
 
-        router.push("/login");
+        const nextPath = new URLSearchParams(window.location.search).get("next");
+        const loginPath = nextPath?.startsWith("/") && !nextPath.startsWith("//")
+          ? `/login?next=${encodeURIComponent(nextPath)}`
+          : "/login";
+
+        router.push(loginPath);
         return;
       }
 

@@ -1,7 +1,6 @@
 const prisma = require("@fishnet/database");
 const { asyncHandler, handleServerError, AppError } = require("../middleware/errorHandler");
 const bcrypt = require('bcryptjs');
-const { nanoid } = require('nanoid');
 const { generateToken } = require('../middleware/auth');
 
 const becomeSeller = asyncHandler(async (request, response) => {
@@ -52,96 +51,63 @@ const becomeSeller = asyncHandler(async (request, response) => {
 });
 
 const sellerRegistration = asyncHandler(async (request, response) => {
-  try {
-    console.log("=== SELLER REGISTRATION REQUEST ===");
-    console.log("Request body:", JSON.stringify(request.body, null, 2));
+  const {
+    email,
+    password,
+    merchantName,
+    merchantDescription,
+    merchantPhone,
+    merchantAddress,
+    verificationDocuments,
+  } = request.body;
+  const normalizedEmail = String(email || "").trim().toLowerCase();
 
-    const {
-      email,
-      password,
-      merchantName,
-      merchantDescription,
-      merchantPhone,
-      merchantAddress,
-      // Verification documents (optional for now)
-      verificationDocuments
-    } = request.body;
+  const normalizedMerchantName = String(merchantName || "").trim();
 
-    // Validate required fields
-    if (!email || !password || !merchantName) {
-      throw new AppError("Email, password, and merchant name are required", 400);
-    }
-
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    });
-
-    if (existingUser) {
-      throw new AppError("Email already in use", 400);
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Create user with SELLER role
-    const user = await prisma.user.create({
-      data: {
-        id: nanoid(),
-        email,
-        password: hashedPassword,
-        role: "SELLER",
-      }
-    });
-
-    // Create merchant profile linked to the user
-    const merchant = await prisma.merchant.create({
-      data: {
-        userId: user.id,
-        name: merchantName,
-        description: merchantDescription || null,
-        phone: merchantPhone || null,
-        address: merchantAddress || null,
-        verificationStatus: "APPROVED",
-        verificationDocuments: verificationDocuments || null,
-      }
-    });
-
-    console.log("Seller registered successfully:", {
-      userId: user.id,
-      merchantId: merchant.id
-    });
-
-    // Return success response (without password)
-    return response.status(201).json({
-      message: "Seller account created successfully",
-      userId: user.id,
-      merchantId: merchant.id,
-      verificationStatus: merchant.verificationStatus
-    });
-
-  } catch (error) {
-    console.error("Error in seller registration:", error);
-    if (error.code === 'P2002') {
-      // Unique constraint violation
-      return response.status(409).json({
-        error: "Registration failed",
-        details: "A user with this email already exists"
-      });
-    }
-    // Handle validation errors
-    if (error.name === 'ValidationError') {
-      return response.status(400).json({
-        error: "Validation failed",
-        details: error.message
-      });
-    }
-    // Generic error
-    return response.status(500).json({
-      error: "Internal server error",
-      details: "Failed to register seller. Please try again later."
-    });
+  if (!normalizedEmail || !password || !normalizedMerchantName) {
+    throw new AppError("Email, password, and business name are required", 400);
   }
+
+  if (password.length < 8) {
+    throw new AppError("Password must be at least 8 characters long", 400);
+  }
+
+  const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+  if (existingUser) {
+    throw new AppError("Email already in use. Sign in to add a seller profile.", 409);
+  }
+
+  const user = await prisma.user.create({
+    data: {
+      email: normalizedEmail,
+      password: await bcrypt.hash(password, 12),
+      role: "SELLER",
+      merchant: {
+        create: {
+          name: normalizedMerchantName,
+          description: merchantDescription?.trim() || null,
+          phone: merchantPhone?.trim() || null,
+          address: merchantAddress?.trim() || null,
+          verificationStatus: "APPROVED",
+          verificationDocuments: verificationDocuments || null,
+          verificationSubmittedAt: new Date(),
+          verificationReviewedAt: new Date(),
+        },
+      },
+    },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      merchant: { select: { id: true, name: true, verificationStatus: true, status: true } },
+    },
+  });
+
+  return response.status(201).json({
+    message: "Seller account created successfully",
+    token: generateToken(user),
+    user,
+  });
 });
 
 // Get seller verification status (for seller dashboard)
