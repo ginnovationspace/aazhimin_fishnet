@@ -177,10 +177,13 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     });
 });
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log('Rate limiting and request logging enabled for all endpoints');
-    console.log('Logs are being written to server/logs/ directory');
-});
+
+if (require.main === module) {
+  app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log('Rate limiting and request logging enabled for all endpoints');
+      console.log('Logs are being written to server/logs/ directory');
+  });
+}
 
 export default app;
