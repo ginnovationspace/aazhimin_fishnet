@@ -41,6 +41,7 @@ const CategoryMenu = () => {
                       height={64}
                       alt={title}
                       className="object-contain transition-transform duration-200 group-hover:-translate-y-1"
+                      style={{ width: "auto", height: "auto" }}
                     />
                   </div>
 

@@ -35,12 +35,7 @@ const SellerDashboardPage = () => {
       return;
     }
 
-    if (session?.user?.role === "ADMIN") {
-      window.location.replace("/admin");
-    } else if (session?.user?.role !== "SELLER") {
-      window.location.replace("/");
-    }
-  }, [session?.user?.role, status]);
+  }, [status]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
