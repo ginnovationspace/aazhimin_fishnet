@@ -40,7 +40,7 @@ export const apiClient = {
     return fetch(url, {
       ...requestOptions,
       ...defaultOptions,
-      signal: options.signal ?? AbortSignal.timeout(15000),
+      signal: options.signal ?? AbortSignal.timeout(30000),
     });
   },
   

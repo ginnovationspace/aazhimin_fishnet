@@ -17,6 +17,39 @@ const ALLOWED_FILTER_TYPES = [
 const ALLOWED_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'equals', 'contains'];
 const ALLOWED_SORT_VALUES = ['defaultSort', 'titleAsc', 'titleDesc', 'lowPrice', 'highPrice'];
 
+const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+const isRetryableDatabaseError = (error) => {
+  const message = String(error?.message || "");
+  return ["P1001", "P1002", "P2024", "Can't reach database server", "Timed out"].some(
+    (pattern) => message.includes(pattern)
+  );
+};
+
+const findProducts = async (query) => {
+  let lastError;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await prisma.product.findMany(query);
+    } catch (error) {
+      lastError = error;
+
+      if (!isRetryableDatabaseError(error) || attempt === 2) {
+        break;
+      }
+
+      await sleep(300 * (attempt + 1));
+    }
+  }
+
+  if (isRetryableDatabaseError(lastError)) {
+    throw new AppError("Product catalog is temporarily unavailable. Please try again shortly.", 503);
+  }
+
+  throw lastError;
+};
+
 // Security: Input validation functions
 function validateFilterType(filterType) {
   return ALLOWED_FILTER_TYPES.includes(filterType);
@@ -104,7 +137,7 @@ const getAllProducts = asyncHandler(async (request, response) => {
 
   // checking if we are on the admin products page because we don't want to have filtering, sorting and pagination there
   if (mode === "admin") {
-    const adminProducts = await prisma.product.findMany({});
+    const adminProducts = await findProducts({});
     return response.json(adminProducts);
   } else {
     const dividerLocation = request.url.indexOf("?");
@@ -230,7 +263,7 @@ const getAllProducts = asyncHandler(async (request, response) => {
     let products;
 
     if (Object.keys(filterObj).length === 0) {
-      products = await prisma.product.findMany({
+      products = await findProducts({
         skip: (validatedPage - 1) * 10,
         take: 12,
         include: {
@@ -245,7 +278,7 @@ const getAllProducts = asyncHandler(async (request, response) => {
     } else {
       // Security: Handle category filter with proper validation
       if (filterObj.category && filterObj.category.equals) {
-        products = await prisma.product.findMany({
+        products = await findProducts({
           skip: (validatedPage - 1) * 10,
           take: 12,
           include: {
@@ -266,7 +299,7 @@ const getAllProducts = asyncHandler(async (request, response) => {
           orderBy: sortObj,
         });
       } else {
-        products = await prisma.product.findMany({
+        products = await findProducts({
           skip: (validatedPage - 1) * 10,
           take: 12,
           include: {

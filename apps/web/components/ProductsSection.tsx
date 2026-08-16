@@ -22,8 +22,9 @@ const ProductsSection = () => {
         const response = await apiClient.get('/api/products')
 
         if (!response.ok) {
+          const errorBody = await response.json().catch(() => null)
           throw new Error(
-            `Failed to fetch products: ${response.statusText}`
+            errorBody?.error || `Failed to fetch products: ${response.statusText}`
           )
         }
 
