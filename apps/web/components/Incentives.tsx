@@ -9,9 +9,11 @@
 // *********************
 
 import { incentives } from '@/lib/utils'
-import Image from 'next/image'
 import React from 'react'
 import { sanitize } from '@/lib/sanitize'
+import { FaLock, FaShieldHalved, FaUserCheck } from 'react-icons/fa6'
+
+const incentiveIcons = [FaUserCheck, FaLock, FaShieldHalved];
 
 const Incentives = () => {
   return (
@@ -19,11 +21,14 @@ const Incentives = () => {
       <h2 className='text-3xl text-center py-5'>Best Customer Benefits</h2>
     <div className="mx-auto max-w-screen-2xl py-10 sm:px-2 lg:px-4">
       <div className="mx-auto grid max-w-2xl grid-cols-1 gap-x-8 gap-y-10 px-4 lg:max-w-none lg:grid-cols-3">
-        {incentives.map((incentive) => (
+        {incentives.map((incentive, index) => {
+          const Icon = incentiveIcons[index] ?? FaShieldHalved;
+
+          return (
           <div key={incentive.name} className="text-center sm:flex sm:text-left lg:block lg:text-center">
             <div className="sm:flex-shrink-0">
               <div className="flow-root">
-                <Image width={48} height={48} className="mx-auto" src={incentive.imageSrc} alt={sanitize(incentive.name)} />
+                <Icon className="mx-auto h-12 w-12 text-blue-600" aria-hidden="true" />
               </div>
             </div>
             <div className="mt-3 sm:ml-3 sm:mt-0 lg:ml-0 lg:mt-3">
@@ -31,7 +36,8 @@ const Incentives = () => {
               <p className="mt-2 text-sm text-gray-500">{sanitize(incentive.description)}</p>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   </div>

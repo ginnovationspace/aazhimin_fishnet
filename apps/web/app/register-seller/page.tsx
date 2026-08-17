@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import apiClient from "@/lib/api";
+import config from "@/lib/config";
 import { replaceClientSession, useSession } from "@/lib/auth-client";
 import toast from "react-hot-toast";
+import { FcGoogle } from "react-icons/fc";
 
 interface SellerFormData {
   email: string;
@@ -46,6 +48,11 @@ const RegisterSellerPage = () => {
       ...previous,
       [field]: value,
     }));
+  };
+
+  const handleGoogleSellerSignUp = () => {
+    const params = new URLSearchParams({ next: "/register-seller" });
+    window.location.assign(`${config.apiBaseUrl}/api/auth/oauth/google/start?${params.toString()}`);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -164,6 +171,14 @@ const RegisterSellerPage = () => {
                   <input id="confirmPassword" type="password" autoComplete="new-password" required minLength={8} value={formData.confirmPassword} onChange={(e) => handleChange("confirmPassword", e.target.value)} disabled={isSubmitting} className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 sm:text-sm" />
                 </div>
               </div>
+              <div className="relative mt-6">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
+                <div className="relative flex justify-center"><span className="bg-white px-3 text-sm text-gray-500">or</span></div>
+              </div>
+              <button type="button" onClick={handleGoogleSellerSignUp} className="mt-5 flex w-full items-center justify-center gap-3 rounded-md border border-gray-300 px-4 py-3 text-sm font-medium text-gray-800 transition hover:bg-gray-50">
+                <FcGoogle className="h-5 w-5" /> Continue with Google
+              </button>
+              <p className="mt-3 text-center text-xs text-gray-500">Google creates a buyer account first; your seller account is created only after you submit the business details below.</p>
             </section>
           )}
 

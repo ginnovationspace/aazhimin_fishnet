@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { FaFish } from "react-icons/fa6";
 
 import CategoryItem from "./CategoryItem";
 import Heading from "./Heading";
@@ -10,11 +10,11 @@ import { sanitize } from "@/lib/sanitize";
 
 const CategoryMenu = () => {
   return (
-    <section className="bg-white py-16">
+    <section className="bg-white py-8">
       <div className="mx-auto max-w-screen-2xl px-6 lg:px-8">
         {/* Heading */}
-        <div className="text-center">
-          <Heading title="Explore Fishnet Categories" />
+        <div className="text-center text-gray-800">
+          <Heading title="Explore Fishnet Categories"/>
 
           <p className="mx-auto mt-3 max-w-2xl text-gray-600">
             Discover fishnets by type, material, and application.
@@ -35,13 +35,9 @@ const CategoryMenu = () => {
               >
                 <div className="flex min-h-[150px] flex-col items-center justify-center">
                   <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-50 transition-colors duration-200 group-hover:bg-blue-50">
-                    <Image
-                      src={item.src}
-                      width={64}
-                      height={64}
-                      alt={title}
-                      className="object-contain transition-transform duration-200 group-hover:-translate-y-1"
-                      style={{ width: "auto", height: "auto" }}
+                    <FaFish
+                      aria-hidden="true"
+                      className="text-3xl text-blue-600 transition-transform duration-200 group-hover:-translate-y-1"
                     />
                   </div>
 

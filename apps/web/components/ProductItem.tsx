@@ -39,11 +39,14 @@ const ProductItem = ({
 }: ProductItemProps) => {
   const { wishlist, setWishlist } = useWishlistStore();
   const { addToCart } = useProductStore();
-  const initialImageSource = product.mainImage
+  const hasProductImage = Boolean(
+    product.mainImage && !product.mainImage.includes("product_placeholder")
+  );
+  const initialImageSource = hasProductImage && product.mainImage
     ? product.mainImage.startsWith("http") || product.mainImage.startsWith("/")
       ? product.mainImage
       : `/${product.mainImage}`
-    : "/product_placeholder.jpg";
+    : "";
   const [imageSource, setImageSource] = useState(initialImageSource);
 
   const isInWishlist = wishlist.some(
@@ -106,12 +109,19 @@ const ProductItem = ({
           className="block h-full w-full"
           aria-label={`View ${sanitize(product.title)}`}
         >
-          <img
-            src={imageSource}
-            alt={sanitize(product.title) || "Fishnet image"}
-            onError={() => setImageSource("/product_placeholder.jpg")}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
+          {imageSource ? (
+            <img
+              src={imageSource}
+              alt={sanitize(product.title) || "Fishnet image"}
+              onError={() => setImageSource("")}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-sky-100 via-cyan-50 to-blue-100 px-6 text-center text-blue-900">
+              <FaHeart className="mb-3 text-3xl text-blue-500" aria-hidden="true" />
+              <span className="text-sm font-semibold">Fishing net product image</span>
+            </div>
+          )}
         </Link>
 
         <button
