@@ -3,8 +3,16 @@
  * This service provides a unified interface for Stripe payment processing.
  */
 
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const Stripe = require('stripe');
 const prisma = require("@fishnet/database");
+
+const getStripe = () => {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error("Stripe is not configured");
+  }
+
+  return new Stripe(process.env.STRIPE_SECRET_KEY);
+};
 
 // Stripe webhook secret for verifying webhook signatures
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
@@ -48,7 +56,7 @@ class StripePaymentService {
       }
 
       // Create a PaymentIntent with the order amount and currency
-      const paymentIntent = await stripe.paymentIntents.create({
+      const paymentIntent = await getStripe().paymentIntents.create({
         amount: amount,
         currency: currency.toLowerCase(),
         automatic_payment_methods: {
@@ -108,7 +116,7 @@ class StripePaymentService {
       }
 
       // Confirm the PaymentIntent with Stripe
-      const paymentIntent = await stripe.paymentIntents.confirm(
+      const paymentIntent = await getStripe().paymentIntents.confirm(
         payment.transactionId, // This is the Stripe PaymentIntent ID
         {
           payment_method: paymentMethodId
@@ -163,7 +171,7 @@ class StripePaymentService {
       }
 
       // Retrieve the PaymentIntent from Stripe
-      const paymentIntent = await stripe.paymentIntents.retrieve(payment.transactionId);
+      const paymentIntent = await getStripe().paymentIntents.retrieve(payment.transactionId);
 
       // Update payment record with latest status from Stripe
       const updatedPayment = await prisma.payment.update({
@@ -232,7 +240,7 @@ class StripePaymentService {
       }
 
       // Create a refund through Stripe
-      const stripeRefund = await stripe.refunds.create({
+      const stripeRefund = await getStripe().refunds.create({
         payment_intent: payment.transactionId, // This is the Stripe PaymentIntent ID
         amount: refundAmount
       });
@@ -313,7 +321,7 @@ class StripePaymentService {
 
       // Verify webhook signature
       if (STRIPE_WEBHOOK_SECRET) {
-        event = stripe.webhooks.constructEvent(payload, sig, STRIPE_WEBHOOK_SECRET);
+        event = getStripe().webhooks.constructEvent(payload, sig, STRIPE_WEBHOOK_SECRET);
       } else {
         // In development, we might skip verification (not recommended for production)
         event = JSON.parse(payload);
