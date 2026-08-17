@@ -58,6 +58,7 @@ app.use(errorLogger);
 const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:4000',
+    'https://fishnet-web.vercel.app',
     process.env.NEXTAUTH_URL,
     process.env.FRONTEND_URL,
 ].filter(Boolean); // Remove undefined values
@@ -77,15 +78,19 @@ const corsOptions = {
           return callback(new Error(msg), false);
         }
     },
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true, // Allow cookies and authorization headers
 };
 
+// CORS must run before rate limiting so browser OPTIONS preflights always get
+// the required Access-Control-Allow-* headers.
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
 // Apply general rate limiting to all routes
 app.use(generalLimiter);
 app.use(express.json());
-app.use(cors(corsOptions));
 app.use(fileUpload());
 // Apply specific rate limiters to different route groups
 app.use("/api/users", userManagementLimiter);
